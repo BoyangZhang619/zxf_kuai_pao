@@ -323,7 +323,12 @@ const visionMaskStyle = computed(() => {
   }
 })
 
-onMounted(() => { window.addEventListener('keydown', handleKeydown); initGame() })
+const isTouch = ref(false)
+onMounted(() => {
+  isTouch.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+  window.addEventListener('keydown', handleKeydown)
+  initGame()
+})
 onUnmounted(() => { window.removeEventListener('keydown', handleKeydown); stopCatTimer(); stopClock() })
 watch(() => props.config, () => initGame(), { deep: true })
 defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
@@ -401,7 +406,7 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
     <div v-if="isVisionReduced()" class="status-toast vision">👁 视野缩小 (5×5) 1秒...</div>
 
     <!-- 移动端操作按钮 -->
-    <div v-if="'ontouchstart' in window || navigator.maxTouchPoints > 0" class="action-buttons">
+    <div v-if="isTouch" class="action-buttons">
       <button v-if="canPickup()" class="act-btn pickup" @pointerdown.prevent="pickupItem">📦 拾取肉干</button>
       <button v-if="canDrink()" class="act-btn drink" @pointerdown.prevent="drinkSugarWater">🧪 饮用糖水</button>
       <button v-if="canDrop()" class="act-btn drop" @pointerdown.prevent="dropItem">📍 放下肉干</button>
