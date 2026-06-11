@@ -280,7 +280,17 @@ function handleKeydown(e: KeyboardEvent) {
     w: 'up', W: 'up', s: 'down', S: 'down', a: 'left', A: 'left', d: 'right', D: 'right',
   }
   const dir = km[e.key]
-  if (dir) { e.preventDefault(); moveMouse(dir) }
+  if (dir) { e.preventDefault(); moveMouse(dir); return }
+
+  // 物品交互快捷键
+  if (e.key === 'e' || e.key === 'E') {
+    e.preventDefault()
+    if (canPickup()) pickupItem()
+    else if (canDrink()) drinkSugarWater()
+  } else if (e.key === 'q' || e.key === 'Q') {
+    e.preventDefault()
+    if (canDrop()) dropItem()
+  }
 }
 
 // ============ 渲染辅助 ============

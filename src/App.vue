@@ -80,7 +80,7 @@ function tapDir(dir: Direction) {
 
     <!-- 桌面端键盘提示（放底部） -->
     <div v-if="!isTouchDevice" class="controls-hint">
-      <kbd>↑ ↓ ← →</kbd> 或 <kbd>W A S D</kbd> 控制老鼠移动
+      <kbd>↑ ↓ ← →</kbd> 移动 &nbsp; <kbd>E</kbd> 拾取/饮用 &nbsp; <kbd>Q</kbd> 放下
     </div>
 
     <!-- 移动端十字方向键 -->
