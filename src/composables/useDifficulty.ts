@@ -11,7 +11,7 @@ export interface DifficultyPreset {
  * 五级难度预设
  *
  * 难度数值经过归一化计算，确保每级之间难度增量大致线性 (~20%/级):
- *  简单 12% → 偏简单 32% → 中等 52% → 偏难 71% → 困难 92%
+ *  简单 12% → 偏简单 32% → 中等 52% → 偏难 71% → 困难 88%
  *
  * 影响难度的参数:
  *  mazeSize↑ / wallDensity↑ / trapCount↑ / trapStunDuration↑
@@ -81,13 +81,13 @@ export const DIFFICULTY_PRESETS: DifficultyPreset[] = [
   {
     key: 'hard',
     label: '困难',
-    desc: '最大迷宫、满陷阱、猫极速追击',
+    desc: '最大迷宫、满陷阱、猫3步后极速追击',
     config: {
       mazeSize: 20,
       wallDensity: 92,
       trapCount: 18,
       trapStunDuration: 3,
-      catSpawnDelay: 1,
+      catSpawnDelay: 3,
       catMoveInterval: 0.2,
       jerkyCount: 0,
       sugarWaterCount: 0,
