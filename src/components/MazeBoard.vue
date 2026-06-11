@@ -34,7 +34,7 @@ let clockTimer: ReturnType<typeof setInterval> | null = null
 
 // ============ 初始化 ============
 function initGame() {
-  const result = generateMaze(props.config.mazeSize)
+  const result = generateMaze(props.config.mazeSize, props.config.wallDensity)
   maze.value = result.maze
   mousePos.value = { ...result.start }
   exitPos.value = { ...result.goal }

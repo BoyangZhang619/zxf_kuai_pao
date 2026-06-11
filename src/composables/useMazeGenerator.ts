@@ -125,37 +125,32 @@ function carvePassages(grid: Cell[][], size: number): void {
 
 /**
  * 第二步：拆除额外墙壁创建环路
- * 拆除比例随迷宫增大而微调，保证多路径的同时不过于简单
+ * @param density 墙壁密度 0-100，数值越高保留越多墙
+ *   - density 100 → 几乎不拆额外墙（最密，接近完美迷宫）
+ *   - density 0   → 拆除最多墙（最开阔）
+ *
+ * 拆墙比例公式：removeRatio = 5% + (100 - density)/100 × 35%
+ *   - density 100: 5% 最少环路
+ *   - density 50:  22.5% 平衡
+ *   - density 0:   40% 最多环路
  */
-function createLoops(grid: Cell[][], size: number): void {
-  // 收集所有可以拆除的内部墙壁（拆了之后能形成环路的）
-  // 其实就是收集所有还存在的内部墙壁，随机拆除一部分
+function createLoops(grid: Cell[][], size: number, density: number): void {
   const removableWalls: { cell: Cell; dir: Direction; neighbor: Cell }[] = []
 
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       const cell = grid[r][c]
-      // 右边墙壁（不是最右列）
       if (c < size - 1 && cell.walls.right) {
-        removableWalls.push({
-          cell,
-          dir: 'right',
-          neighbor: grid[r][c + 1],
-        })
+        removableWalls.push({ cell, dir: 'right', neighbor: grid[r][c + 1] })
       }
-      // 下边墙壁（不是最下行）
       if (r < size - 1 && cell.walls.bottom) {
-        removableWalls.push({
-          cell,
-          dir: 'down',
-          neighbor: grid[r + 1][c],
-        })
+        removableWalls.push({ cell, dir: 'down', neighbor: grid[r + 1][c] })
       }
     }
   }
 
-  // 拆除比例：约 25%-35%，让迷宫有足够的环路来打破右手法则
-  const removeRatio = 0.25 + Math.random() * 0.15
+  // 密度 → 拆墙比例：高密度 = 低拆除率
+  const removeRatio = 0.05 + ((100 - density) / 100) * 0.35
   const removeCount = Math.floor(removableWalls.length * removeRatio)
 
   const toRemove = shuffle(removableWalls).slice(0, removeCount)
@@ -256,7 +251,7 @@ function checkRightHandRuleFails(maze: Cell[][], start: Position, goal: Position
 /**
  * 主入口：生成一个多路径、反右手法则的迷宫
  */
-export function generateMaze(size: number): { maze: Cell[][]; start: Position; goal: Position } {
+export function generateMaze(size: number, density: number = 50): { maze: Cell[][]; start: Position; goal: Position } {
   // 初始化全墙格子
   const grid: Cell[][] = Array.from({ length: size }, (_, r) =>
     Array.from({ length: size }, (__, c) => createCell(r, c)),
@@ -265,8 +260,8 @@ export function generateMaze(size: number): { maze: Cell[][]; start: Position; g
   // 第一步：DFS 生成完美迷宫
   carvePassages(grid, size)
 
-  // 第二步：创建环路
-  createLoops(grid, size)
+  // 第二步：创建环路（密度参数控制拆墙比例）
+  createLoops(grid, size, density)
 
   // 起点和终点
   const start: Position = { row: 0, col: 0 }
@@ -276,17 +271,16 @@ export function generateMaze(size: number): { maze: Cell[][]; start: Position; g
   grid[0][0].walls.top = false
   grid[size - 1][size - 1].walls.bottom = false
 
-  // 验证可到达性（防御性编程）
+  // 验证可到达性
   if (!isReachable(grid, start, goal, size)) {
-    // 极罕见情况：拆墙破坏了连通性，重新生成
-    return generateMaze(size)
+    return generateMaze(size, density)
   }
 
   // 如果右手法则能直接到达终点，再多拆一些墙
   if (!checkRightHandRuleFails(grid, start, goal, size)) {
-    createLoops(grid, size)
+    createLoops(grid, size, Math.max(0, density - 20))
     if (!isReachable(grid, start, goal, size)) {
-      return generateMaze(size)
+      return generateMaze(size, density)
     }
   }
 

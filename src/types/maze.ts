@@ -33,6 +33,8 @@ export interface GameConfig {
   catMoveInterval: number
   /** 迷宫边长 */
   mazeSize: number
+  /** 墙壁密度 0-100，数值越高墙越多（迷宫越密） */
+  wallDensity: number
 }
 
 /** 游戏完整状态 */

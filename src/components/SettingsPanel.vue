@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { GameConfig } from '../types/maze'
+import { useStyle } from '../composables/useStyle'
 
 const props = defineProps<{
   config: GameConfig
@@ -14,8 +15,10 @@ const emit = defineEmits<{
 
 const local = ref<GameConfig>({ ...props.config })
 
+const { theme, setTheme, getThemeNames } = useStyle()
+const themeNames = getThemeNames()
+
 // 每次打开面板时同步外部配置
-import { watch } from 'vue'
 watch(() => props.visible, (v) => {
   if (v) local.value = { ...props.config }
 })
@@ -93,6 +96,45 @@ function handleCancel() {
                 />
                 <span class="slider-val">{{ local.mazeSize }}</span>
               </div>
+            </div>
+
+            <!-- 墙壁密度 -->
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">墙壁密度</span>
+                <span class="setting-desc">
+                  {{ local.wallDensity >= 80 ? '较密 · 路径少' : local.wallDensity >= 40 ? '适中' : '较疏 · 多岔路' }}
+                </span>
+              </div>
+              <div class="slider-wrap">
+                <input
+                  v-model.number="local.wallDensity"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                  class="styled-slider"
+                />
+                <span class="slider-val">{{ local.wallDensity }}</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- ====== 风格主题 ====== -->
+          <section class="setting-section">
+            <h4 class="section-title">🎨 风格主题</h4>
+
+            <div class="theme-grid">
+              <button
+                v-for="t in themeNames"
+                :key="t.name"
+                class="theme-card"
+                :class="{ active: theme.name === t.name }"
+                @click="setTheme(t.name)"
+              >
+                <span class="theme-name">{{ t.label }}</span>
+                <span v-if="theme.name === t.name" class="theme-check">✓</span>
+              </button>
             </div>
           </section>
         </div>
@@ -273,6 +315,43 @@ function handleCancel() {
   color: #1a1a2e;
   min-width: 24px;
   font-variant-numeric: tabular-nums;
+}
+
+/* ===== 主题卡片 ===== */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.theme-card {
+  position: relative;
+  padding: 10px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  background: #fff;
+  color: #666;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.theme-card:hover { border-color: #999; color: #333; }
+
+.theme-card.active {
+  border-color: #1a1a2e;
+  background: #f8f8fb;
+  color: #1a1a2e;
+}
+
+.theme-check {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-size: 12px;
+  color: #1a1a2e;
 }
 
 /* ===== 底部按钮 ===== */
