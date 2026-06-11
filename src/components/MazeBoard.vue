@@ -29,7 +29,6 @@ const trapSet = ref<Set<string>>(new Set())
 const groundItems = ref<GroundItem[]>([])
 const inventory = ref<ItemType | null>(null)
 const elapsed = ref('00:00')
-const gameOverMessage = ref('')
 const firstMoveMade = ref(false)
 
 // 停滞与 buff
@@ -65,7 +64,6 @@ function initGame() {
   trail.value = new Set()
   trail.value.add(`${result.start.row},${result.start.col}`)
   phase.value = 'playing'
-  gameOverMessage.value = ''
   firstMoveMade.value = false
   mouseStunnedUntil.value = 0
   catStunnedUntil.value = 0
@@ -284,13 +282,19 @@ function destroyWalls5x5() {
 // ============ 胜利/失败 ============
 function triggerWin() {
   phase.value = 'won'; endTime.value = Date.now(); stopCatTimer(); stopClock()
-  gameOverMessage.value = '成功逃出迷宫！'
-  setTimeout(() => emit('won', moves.value, Math.floor((endTime.value - startTime.value) / 1000)), 600)
 }
 function triggerCaught() {
   phase.value = 'caught'; endTime.value = Date.now(); stopCatTimer(); stopClock()
-  gameOverMessage.value = '你跑不过我信不信'
-  setTimeout(() => emit('caught', moves.value), 600)
+}
+
+const showChichu = ref(false)
+function onBelieve() {
+  showChichu.value = true
+  setTimeout(() => { showChichu.value = false }, 1500)
+  setTimeout(() => emitRestart(), 1800)
+}
+function emitRestart() {
+  emit('won', moves.value, Math.floor((endTime.value - startTime.value) / 1000))
 }
 
 // ============ 键盘 ============
@@ -391,12 +395,9 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
 
     <!-- 棋盘 -->
     <div class="maze-board-wrap">
-      <div v-if="!firstMoveMade" class="fog-overlay"><span>走出第一步探索迷宫...</span></div>
-
       <div
         v-if="maze.length > 0"
         class="maze-board"
-        :class="{ blurred: !firstMoveMade }"
         :style="{
           width: boardSizePx + 'px', height: boardSizePx + 'px',
           gridTemplateColumns: `repeat(${config.mazeSize}, 1fr)`,
@@ -432,7 +433,7 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
     </div>
 
     <!-- 状态标签 -->
-    <div v-if="isMouseStunned() && firstMoveMade" class="status-toast trap">⚡ 被陷阱困住！</div>
+    <div v-if="isMouseStunned()" class="status-toast trap">⚡ 被陷阱困住！</div>
     <div v-if="isCatEating()" class="status-toast eat">🍖 张雪峰在吃巧乐兹 (3秒)...</div>
     <div v-if="hasCatSpeed() && !isCatEating()" class="status-toast speed">⚡ 张雪峰双倍速中！</div>
     <div v-if="hasCatWallPhase()" class="status-toast phase">👻 张雪峰穿墙中！</div>
@@ -445,17 +446,41 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
       <button v-if="canDrop()" class="act-btn drop" @pointerdown.prevent="dropItem">📍 放下</button>
     </Teleport>
 
-    <!-- 游戏结束 -->
+    <!-- 游戏结束：胜利 -->
     <Transition name="fade">
-      <div v-if="phase === 'won' || phase === 'caught'" class="overlay">
-        <div class="overlay-card" :class="phase">
-          <h2>{{ phase === 'won' ? '🎉 逃脱成功！' : '你跑不过我信不信' }}</h2>
-          <p>{{ gameOverMessage }}</p>
+      <div v-if="phase === 'won'" class="overlay">
+        <div class="overlay-card won">
+          <h2>🎉 恭喜你逃离了张雪峰，吗？</h2>
           <div class="overlay-stats">
             <div><strong>{{ moves }}</strong><small>步数</small></div>
             <div><strong>{{ elapsed }}</strong><small>用时</small></div>
           </div>
+          <button class="end-btn won-btn" @click="emitRestart">再次挑战张雪峰</button>
         </div>
+      </div>
+    </Transition>
+
+    <!-- 游戏结束：被抓 -->
+    <Transition name="fade">
+      <div v-if="phase === 'caught'" class="overlay">
+        <div class="overlay-card caught">
+          <h2>你跑不过我你信不信</h2>
+          <div class="overlay-stats">
+            <div><strong>{{ moves }}</strong><small>步数</small></div>
+            <div><strong>{{ elapsed }}</strong><small>用时</small></div>
+          </div>
+          <div class="end-buttons">
+            <button class="end-btn believe-btn" @click="onBelieve">信</button>
+            <button class="end-btn doubt-btn" @click="emitRestart">不信</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- 彳亍 弹窗 -->
+    <Transition name="fade">
+      <div v-if="showChichu" class="overlay chichu-overlay">
+        <div class="chichu-text">彳亍</div>
       </div>
     </Transition>
   </div>
@@ -474,9 +499,7 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
 
 /* 棋盘 */
 .maze-board-wrap { position: relative; }
-.fog-overlay { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; color: #999; font-size: 15px; font-weight: 600; pointer-events: none; }
-.maze-board { display: grid; background: var(--maze-path, #f8f9fa); border: 2px solid var(--maze-wall, #1a1a2e); border-radius: 2px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); position: relative; overflow: hidden; transition: filter 0.5s ease; }
-.maze-board.blurred { filter: blur(12px); }
+.maze-board { display: grid; background: var(--maze-path, #f8f9fa); border: 2px solid var(--maze-wall, #1a1a2e); border-radius: 2px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); position: relative; overflow: hidden; }
 
 .maze-cell { width: var(--cell-size); height: var(--cell-size); position: relative; display: flex; align-items: center; justify-content: center; box-sizing: border-box; border-top: 1px solid var(--maze-wall, #1a1a2e); border-right: 1px solid var(--maze-wall, #1a1a2e); border-bottom: 1px solid var(--maze-wall, #1a1a2e); border-left: 1px solid var(--maze-wall, #1a1a2e); }
 .maze-cell.no-top { border-top-color: transparent; } .maze-cell.no-right { border-right-color: transparent; }
@@ -536,6 +559,35 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
 .overlay-stats { display: flex; gap: 32px; justify-content: center; }
 .overlay-stats strong { font-size: 28px; color: #333; }
 .overlay-stats small { font-size: 12px; color: #999; display: block; }
+
+/* 结局按钮 */
+.end-buttons { display: flex; gap: 16px; justify-content: center; margin-top: 16px; }
+.end-btn {
+  font-size: 16px; font-weight: 700; padding: 10px 32px; border-radius: 10px;
+  border: 2px solid transparent; cursor: pointer; transition: all 0.15s;
+}
+.believe-btn { background: #1a1a2e; color: #fff; }
+.believe-btn:hover { background: #2d2d4a; }
+.doubt-btn { background: #fff; color: #666; border-color: #ccc; }
+.doubt-btn:hover { border-color: #1a1a2e; color: #333; }
+.won-btn { background: #4caf50; color: #fff; margin-top: 16px; }
+.won-btn:hover { background: #43a047; }
+
+/* 彳亍 弹窗 */
+.chichu-overlay {
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.6); z-index: 20;
+}
+.chichu-text {
+  font-size: 64px; font-weight: 900; color: #fff;
+  animation: chichu-fade 1.5s ease-in-out;
+}
+@keyframes chichu-fade {
+  0% { opacity: 0; transform: scale(0.5); }
+  20% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8); }
+}
 
 .fade-enter-active { transition: opacity 0.4s ease; } .fade-leave-active { transition: opacity 0.25s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }

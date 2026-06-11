@@ -16,7 +16,7 @@ const isTouchDevice =
 const defaultConfig: GameConfig = {
   catSpawnDelay: 5,
   catMoveInterval: 0.5,
-  mazeSize: 16,
+  mazeSize: 10,
   wallDensity: 60,
   trapCount: 4,
   trapStunDuration: 1,

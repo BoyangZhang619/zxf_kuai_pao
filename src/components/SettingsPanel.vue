@@ -89,8 +89,8 @@ function handleCancel() {
                 <input
                   v-model.number="local.mazeSize"
                   type="range"
-                  min="10"
-                  max="30"
+                  min="5"
+                  max="20"
                   step="2"
                   class="styled-slider"
                 />
