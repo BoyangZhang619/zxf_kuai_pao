@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import type { Cell, Position, Direction, GamePhase, GameConfig, GroundItem, ItemType, CatBuffs } from '../types/maze'
 import { generateMaze, canMove, dijkstraNextStep, movePosition } from '../composables/useMazeGenerator'
 import { useStyle } from '../composables/useStyle'
+import { gameInfo, resetGameInfo } from '../composables/useGameInfo'
 
 const props = defineProps<{ config: GameConfig }>()
 const emit = defineEmits<{
@@ -71,7 +72,8 @@ function initGame() {
   catBuffs.value = { speedBoostUntil: 0, wallPhaseUntil: 0, eatingUntil: 0 }
   mouseVisionUntil.value = 0
   stopCatTimer()
-  startClock()
+  resetGameInfo()
+  // 不启动时钟 — 等待玩家第一步
 }
 
 // ============ 时钟 ============
@@ -81,10 +83,23 @@ function startClock() {
     if (phase.value === 'playing') {
       const sec = Math.floor((Date.now() - startTime.value) / 1000)
       elapsed.value = String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0')
+      gameInfo.elapsed = elapsed.value
     }
   }, 200)
 }
 function stopClock() { if (clockTimer) { clearInterval(clockTimer); clockTimer = null } }
+
+function syncGameInfo() {
+  gameInfo.moves = moves.value
+  gameInfo.elapsed = elapsed.value
+  gameInfo.catActive = catActive.value
+  gameInfo.firstMoveMade = firstMoveMade.value
+  gameInfo.inventory = inventory.value
+  gameInfo.catEating = isCatEating()
+  gameInfo.catSpeedy = hasCatSpeed()
+  gameInfo.catPhasing = hasCatWallPhase()
+  gameInfo.mouseStunned = isMouseStunned()
+}
 
 // ============ 猫计时器（动态间隔） ============
 function scheduleCatMove() {
@@ -180,10 +195,14 @@ function moveMouse(dir: Direction) {
   if (Date.now() < mouseStunnedUntil.value) return
 
   if (canMove(maze.value, mousePos.value, dir, props.config.mazeSize)) {
+    // 第一步：启动时钟
+    if (!firstMoveMade.value) { startClock(); startTime.value = Date.now() }
+
     mousePos.value = movePosition(mousePos.value, dir)
     moves.value++
     trail.value.add(`${mousePos.value.row},${mousePos.value.col}`)
     firstMoveMade.value = true
+    syncGameInfo()
 
     if (trapSet.value.has(`${mousePos.value.row},${mousePos.value.col}`)) {
       mouseStunnedUntil.value = Date.now() + props.config.trapStunDuration * 1000
@@ -419,12 +438,12 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
     <div v-if="hasCatWallPhase()" class="status-toast phase">👻 张雪峰穿墙中！</div>
     <div v-if="isVisionReduced()" class="status-toast vision">👁 视野缩小 (5×5) 1秒...</div>
 
-    <!-- 移动端操作按钮 -->
-    <div v-if="isTouch" class="action-buttons">
-      <button v-if="canPickup()" class="act-btn pickup" @pointerdown.prevent="pickupItem">📦 拾取巧乐兹</button>
-      <button v-if="canDrink()" class="act-btn drink" @pointerdown.prevent="drinkSugarWater">🧪 饮用雪碧</button>
-      <button v-if="canDrop()" class="act-btn drop" @pointerdown.prevent="dropItem">📍 放下巧乐兹</button>
-    </div>
+    <!-- 移动端操作按钮 → Teleport 到 App.vue 底部栏 -->
+    <Teleport to="#mobile-actions" v-if="isTouch">
+      <button v-if="canPickup()" class="act-btn pickup" @pointerdown.prevent="pickupItem">📦 拾取</button>
+      <button v-if="canDrink()" class="act-btn drink" @pointerdown.prevent="drinkSugarWater">🧪 饮用</button>
+      <button v-if="canDrop()" class="act-btn drop" @pointerdown.prevent="dropItem">📍 放下</button>
+    </Teleport>
 
     <!-- 游戏结束 -->
     <Transition name="fade">
@@ -500,9 +519,8 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
 .status-toast.vision { color: #3498db; border: 1px solid #3498db; }
 @keyframes pulse { from { opacity: 0.7; } to { opacity: 1; } }
 
-/* 移动端操作按钮 */
-.action-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.act-btn { font-size: 14px; font-weight: 600; padding: 10px 18px; border-radius: 10px; border: 2px solid transparent; cursor: pointer; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: all 0.12s; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+/* 移动端操作按钮（Teleport 到 #mobile-actions） */
+.act-btn { font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 8px; border: 1.5px solid transparent; cursor: pointer; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.08); transition: all 0.12s; touch-action: manipulation; -webkit-tap-highlight-color: transparent; white-space: nowrap; }
 .act-btn:active { transform: scale(0.93); }
 .act-btn.pickup { border-color: #f39800; color: #f39800; }
 .act-btn.drink { border-color: #9b59b6; color: #9b59b6; }
