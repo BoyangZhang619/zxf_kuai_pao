@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onUnmounted } from 'vue'
-import type { Cell, Position, Direction, GamePhase } from '../types/maze'
-import type { StyleTheme } from '../types/maze'
-import { generateMaze, canMove } from '../composables/useMazeGenerator'
+import type { Cell, Position, Direction, GamePhase, GameConfig } from '../types/maze'
+import { generateMaze, canMove, bfsNextStep, movePosition } from '../composables/useMazeGenerator'
 import { useStyle } from '../composables/useStyle'
 
 const props = defineProps<{
-  size: number
+  config: GameConfig
 }>()
 
 const emit = defineEmits<{
   won: [moves: number, time: number]
+  caught: [moves: number]
 }>()
 
 const { theme } = useStyle()
@@ -18,46 +18,43 @@ const { theme } = useStyle()
 // ============ 游戏状态 ============
 const phase = ref<GamePhase>('playing')
 const maze = ref<Cell[][]>([])
-const playerPos = ref<Position>({ row: 0, col: 0 })
-const goalPos = ref<Position>({ row: props.size - 1, col: props.size - 1 })
+const mousePos = ref<Position>({ row: 0, col: 0 })
+const exitPos = ref<Position>({ row: props.config.mazeSize - 1, col: props.config.mazeSize - 1 })
+const catPos = ref<Position | null>(null)
+const catActive = ref(false)
 const moves = ref(0)
 const startTime = ref(0)
 const endTime = ref(0)
 const trail = ref<Set<string>>(new Set())
-const hasWon = ref(false)
-
 const elapsed = ref('00:00')
+const gameOverMessage = ref('')
 
-let timerInterval: ReturnType<typeof setInterval> | null = null
+let catTimer: ReturnType<typeof setInterval> | null = null
+let clockTimer: ReturnType<typeof setInterval> | null = null
 
-// ============ 迷宫中所有可用的方向常量 ============
-const ALL_DIRS: { key: Direction; dr: number; dc: number }[] = [
-  { key: 'up', dr: -1, dc: 0 },
-  { key: 'down', dr: 1, dc: 0 },
-  { key: 'left', dr: 0, dc: -1 },
-  { key: 'right', dr: 0, dc: 1 },
-]
-
-// ============ 初始化游戏 ============
+// ============ 初始化 ============
 function initGame() {
-  const result = generateMaze(props.size)
+  const result = generateMaze(props.config.mazeSize)
   maze.value = result.maze
-  playerPos.value = { ...result.start }
-  goalPos.value = { ...result.goal }
+  mousePos.value = { ...result.start }
+  exitPos.value = { ...result.goal }
+  catPos.value = null
+  catActive.value = false
   moves.value = 0
   startTime.value = Date.now()
   endTime.value = 0
   trail.value = new Set()
   trail.value.add(`${result.start.row},${result.start.col}`)
-  hasWon.value = false
   phase.value = 'playing'
-
-  startTimer()
+  gameOverMessage.value = ''
+  stopCatTimer()
+  startClock()
 }
 
-function startTimer() {
-  stopTimer()
-  timerInterval = setInterval(() => {
+// ============ 时钟 ============
+function startClock() {
+  stopClock()
+  clockTimer = setInterval(() => {
     if (phase.value === 'playing') {
       const sec = Math.floor((Date.now() - startTime.value) / 1000)
       const m = Math.floor(sec / 60)
@@ -67,117 +64,138 @@ function startTimer() {
   }, 200)
 }
 
-function stopTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval)
-    timerInterval = null
+function stopClock() {
+  if (clockTimer) { clearInterval(clockTimer); clockTimer = null }
+}
+
+// ============ 猫计时器 ============
+function startCatTimer() {
+  stopCatTimer()
+  catTimer = setInterval(() => {
+    if (phase.value === 'playing' && catActive.value && catPos.value) {
+      moveCat()
+    }
+  }, props.config.catMoveInterval * 1000)
+}
+
+function stopCatTimer() {
+  if (catTimer) { clearInterval(catTimer); catTimer = null }
+}
+
+// ============ 猫 AI ============
+function spawnCat() {
+  catPos.value = { row: 0, col: 0 }
+  catActive.value = true
+  startCatTimer()
+  // 猫刚出现时立刻走一步
+  moveCat()
+}
+
+function moveCat() {
+  if (!catPos.value || !catActive.value || phase.value !== 'playing') return
+
+  const nextDir = bfsNextStep(maze.value, catPos.value, mousePos.value, props.config.mazeSize)
+  if (nextDir) {
+    catPos.value = movePosition(catPos.value, nextDir)
+    // 检查猫是否抓到了老鼠
+    if (catPos.value.row === mousePos.value.row && catPos.value.col === mousePos.value.col) {
+      triggerCaught()
+    }
   }
 }
 
-// ============ 玩家移动 ============
-function movePlayer(dir: Direction) {
-  if (phase.value !== 'playing' || hasWon.value) return
+// ============ 老鼠移动 ============
+function moveMouse(dir: Direction) {
+  if (phase.value !== 'playing') return
 
-  if (canMove(maze.value, playerPos.value, dir, props.size)) {
-    const dr = dir === 'up' ? -1 : dir === 'down' ? 1 : 0
-    const dc = dir === 'left' ? -1 : dir === 'right' ? 1 : 0
-    playerPos.value = {
-      row: playerPos.value.row + dr,
-      col: playerPos.value.col + dc,
-    }
+  if (canMove(maze.value, mousePos.value, dir, props.config.mazeSize)) {
+    mousePos.value = movePosition(mousePos.value, dir)
     moves.value++
-    trail.value.add(`${playerPos.value.row},${playerPos.value.col}`)
+    trail.value.add(`${mousePos.value.row},${mousePos.value.col}`)
 
-    // 检查是否到达终点
-    if (
-      playerPos.value.row === goalPos.value.row &&
-      playerPos.value.col === goalPos.value.col
-    ) {
-      hasWon.value = true
-      phase.value = 'won'
-      endTime.value = Date.now()
-      stopTimer()
-      const time = Math.floor((endTime.value - startTime.value) / 1000)
-      setTimeout(() => {
-        emit('won', moves.value, time)
-      }, 600)
+    // 猫出现条件：走了 N 步后
+    if (!catActive.value && moves.value >= props.config.catSpawnDelay) {
+      spawnCat()
+    }
+
+    // 检查是否被猫抓到（老鼠走进猫的格子）
+    if (catPos.value && catPos.value.row === mousePos.value.row && catPos.value.col === mousePos.value.col) {
+      triggerCaught()
+      return
+    }
+
+    // 检查是否到达出口
+    if (mousePos.value.row === exitPos.value.row && mousePos.value.col === exitPos.value.col) {
+      triggerWin()
     }
   }
 }
 
-// ============ 键盘事件 ============
+function triggerWin() {
+  phase.value = 'won'
+  endTime.value = Date.now()
+  stopCatTimer()
+  stopClock()
+  const time = Math.floor((endTime.value - startTime.value) / 1000)
+  gameOverMessage.value = '老鼠成功逃出迷宫！'
+  setTimeout(() => emit('won', moves.value, time), 600)
+}
+
+function triggerCaught() {
+  phase.value = 'caught'
+  endTime.value = Date.now()
+  stopCatTimer()
+  stopClock()
+  gameOverMessage.value = '猫抓住了老鼠！'
+  setTimeout(() => emit('caught', moves.value), 600)
+}
+
+// ============ 键盘 ============
 function handleKeydown(e: KeyboardEvent) {
   const keyMap: Record<string, Direction> = {
-    ArrowUp: 'up',
-    ArrowDown: 'down',
-    ArrowLeft: 'left',
-    ArrowRight: 'right',
-    w: 'up',
-    W: 'up',
-    s: 'down',
-    S: 'down',
-    a: 'left',
-    A: 'left',
-    d: 'right',
-    D: 'right',
+    ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+    w: 'up', W: 'up', s: 'down', S: 'down', a: 'left', A: 'left', d: 'right', D: 'right',
   }
-
   const dir = keyMap[e.key]
-  if (dir) {
-    e.preventDefault()
-    movePlayer(dir)
-  }
+  if (dir) { e.preventDefault(); moveMouse(dir) }
 }
 
-// ============ 格子尺寸响应式计算 ============
+// ============ 渲染计算 ============
 const boardSizePx = computed(() => {
-  // 自适应：取 viewport 宽高较小者来适配
-  const maxBoard = Math.min(window.innerWidth - 40, window.innerHeight - 240, 640)
-  return Math.floor(maxBoard / props.size) * props.size
+  const maxBoard = Math.min(window.innerWidth - 40, window.innerHeight - 260, 640)
+  return Math.floor(maxBoard / props.config.mazeSize) * props.config.mazeSize
 })
+const cellSizePx = computed(() => boardSizePx.value / props.config.mazeSize)
 
-const cellSizePx = computed(() => {
-  return boardSizePx.value / props.size
-})
-
-// ============ 格子的 CSS 类（隐藏墙体 → 透明 border） ============
 function cellClasses(cell: Cell): Record<string, boolean> {
-  const classes: Record<string, boolean> = {
+  return {
     'maze-cell': true,
+    'no-top': !cell.walls.top,
+    'no-right': !cell.walls.right,
+    'no-bottom': !cell.walls.bottom,
+    'no-left': !cell.walls.left,
   }
-  if (!cell.walls.top) classes['no-top'] = true
-  if (!cell.walls.right) classes['no-right'] = true
-  if (!cell.walls.bottom) classes['no-bottom'] = true
-  if (!cell.walls.left) classes['no-left'] = true
-  return classes
 }
 
-function isOnTrail(row: number, col: number): boolean {
-  return trail.value.has(`${row},${col}`)
+function isOnTrail(r: number, c: number) {
+  return trail.value.has(`${r},${c}`)
+}
+
+function isGoal(r: number, c: number) {
+  return exitPos.value.row === r && exitPos.value.col === c
 }
 
 // ============ 生命周期 ============
-onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
-  initGame()
-})
-
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeydown)
-  stopTimer()
-})
-
-// 尺寸变化时重新生成
-watch(() => props.size, () => {
-  initGame()
-})
+onMounted(() => { window.addEventListener('keydown', handleKeydown); initGame() })
+onUnmounted(() => { window.removeEventListener('keydown', handleKeydown); stopCatTimer(); stopClock() })
+watch(() => props.config, () => initGame(), { deep: true })
 
 defineExpose({ initGame })
 </script>
 
 <template>
   <div class="maze-game" :style="{ '--cell-size': cellSizePx + 'px' }">
-    <!-- HUD 信息栏 -->
+    <!-- HUD -->
     <div class="maze-hud">
       <div class="hud-item">
         <span class="hud-label">步数</span>
@@ -188,75 +206,77 @@ defineExpose({ initGame })
         <span class="hud-value">{{ elapsed }}</span>
       </div>
       <div class="hud-item">
-        <span class="hud-label">迷宫大小</span>
-        <span class="hud-value">{{ size }}×{{ size }}</span>
+        <span class="hud-label cat-indicator" :class="{ active: catActive }">
+          {{ catActive ? '🐱 追击中' : '😴 猫未醒' }}
+        </span>
+        <span class="hud-value hud-small">
+          {{ catActive ? '第' + moves + '步激活' : moves + '/' + config.catSpawnDelay }}
+        </span>
       </div>
     </div>
 
-    <!-- 迷宫棋盘 -->
+    <!-- 棋盘 -->
     <div
       v-if="maze.length > 0"
       class="maze-board"
       :style="{
         width: boardSizePx + 'px',
         height: boardSizePx + 'px',
-        gridTemplateColumns: `repeat(${size}, 1fr)`,
-        gridTemplateRows: `repeat(${size}, 1fr)`,
+        gridTemplateColumns: `repeat(${config.mazeSize}, 1fr)`,
+        gridTemplateRows: `repeat(${config.mazeSize}, 1fr)`,
         '--path-color': theme.pathColor,
         '--trail-color': theme.trailColor,
       }"
     >
-      <template v-for="r in size" :key="'row-' + r">
+      <template v-for="r in config.mazeSize" :key="'row-' + r">
         <div
-          v-for="c in size"
+          v-for="c in config.mazeSize"
           :key="'cell-' + r + '-' + c"
           :class="cellClasses(maze[r - 1][c - 1])"
-          :style="{
-            '--wall-color': theme.wallColor,
-          }"
+          :style="{ '--wall-color': theme.wallColor }"
         >
-          <!-- 已走过的路径标记 -->
-          <div
-            v-if="isOnTrail(r - 1, c - 1)"
-            class="trail-mark"
-          />
+          <!-- 路径痕迹 -->
+          <div v-if="isOnTrail(r - 1, c - 1)" class="trail-mark" />
 
-          <!-- 玩家（猫）方块 -->
+          <!-- 出口标记 -->
           <div
-            v-if="playerPos.row === r - 1 && playerPos.col === c - 1"
-            class="player-block"
-            :style="{ '--player-color': theme.playerColor }"
+            v-if="isGoal(r - 1, c - 1)"
+            class="exit-cell"
+            :style="{ '--exit-color': theme.exitColor }"
           >
-            🐱
+            🚪
           </div>
 
-          <!-- 目标（老鼠）方块 -->
+          <!-- 老鼠（玩家） -->
           <div
-            v-if="goalPos.row === r - 1 && goalPos.col === c - 1 && !(playerPos.row === r - 1 && playerPos.col === c - 1)"
-            class="goal-block"
-            :style="{ '--goal-color': theme.goalColor }"
+            v-if="mousePos.row === r - 1 && mousePos.col === c - 1"
+            class="mouse-block"
+            :style="{ '--mouse-color': theme.mouseColor }"
           >
             🐭
+          </div>
+
+          <!-- 猫（AI 敌人） -->
+          <div
+            v-if="catPos && catPos.row === r - 1 && catPos.col === c - 1 && !(mousePos.row === r - 1 && mousePos.col === c - 1)"
+            class="cat-block"
+            :style="{ '--cat-color': theme.catColor }"
+          >
+            🐱
           </div>
         </div>
       </template>
     </div>
 
-    <!-- 胜利提示 -->
+    <!-- 游戏结束弹层 -->
     <Transition name="fade">
-      <div v-if="hasWon" class="win-overlay">
-        <div class="win-card">
-          <h2>🎉 抓住了！</h2>
-          <p>猫咪成功抓住了老鼠！</p>
-          <div class="win-stats">
-            <div>
-              <strong>{{ moves }}</strong>
-              <small>步数</small>
-            </div>
-            <div>
-              <strong>{{ elapsed }}</strong>
-              <small>用时</small>
-            </div>
+      <div v-if="phase === 'won' || phase === 'caught'" class="overlay">
+        <div class="overlay-card" :class="phase">
+          <h2>{{ phase === 'won' ? '🎉 逃脱成功！' : '😿 被抓住了！' }}</h2>
+          <p>{{ gameOverMessage }}</p>
+          <div class="overlay-stats">
+            <div><strong>{{ moves }}</strong><small>步数</small></div>
+            <div><strong>{{ elapsed }}</strong><small>用时</small></div>
           </div>
         </div>
       </div>
@@ -273,7 +293,7 @@ defineExpose({ initGame })
   position: relative;
 }
 
-/* ===== HUD ===== */
+/* HUD */
 .maze-hud {
   display: flex;
   gap: 24px;
@@ -281,30 +301,34 @@ defineExpose({ initGame })
   background: #f8f9fa;
   border-radius: 10px;
   border: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+  justify-content: center;
 }
-
 .hud-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 52px;
+  min-width: 64px;
 }
-
 .hud-label {
   font-size: 11px;
   color: #999;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-
+.hud-label.cat-indicator.active {
+  color: #e05a3d;
+  font-weight: 700;
+}
 .hud-value {
   font-size: 18px;
   font-weight: 700;
   color: #333;
   font-variant-numeric: tabular-nums;
 }
+.hud-small { font-size: 13px; font-weight: 500; color: #888; }
 
-/* ===== 棋盘 ===== */
+/* 棋盘 */
 .maze-board {
   display: grid;
   background: var(--path-color);
@@ -315,7 +339,7 @@ defineExpose({ initGame })
   overflow: hidden;
 }
 
-/* ===== 单元格 ===== */
+/* 单元格 */
 .maze-cell {
   width: var(--cell-size);
   height: var(--cell-size);
@@ -329,24 +353,11 @@ defineExpose({ initGame })
   border-bottom: 1px solid var(--wall-color);
   border-left: 1px solid var(--wall-color);
 }
+.maze-cell.no-top    { border-top-color:    transparent; }
+.maze-cell.no-right  { border-right-color:  transparent; }
+.maze-cell.no-bottom { border-bottom-color: transparent; }
+.maze-cell.no-left   { border-left-color:   transparent; }
 
-.maze-cell.no-top {
-  border-top-color: transparent;
-}
-
-.maze-cell.no-right {
-  border-right-color: transparent;
-}
-
-.maze-cell.no-bottom {
-  border-bottom-color: transparent;
-}
-
-.maze-cell.no-left {
-  border-left-color: transparent;
-}
-
-/* 路径追踪 */
 .trail-mark {
   position: absolute;
   inset: 1px;
@@ -355,105 +366,56 @@ defineExpose({ initGame })
   pointer-events: none;
 }
 
-/* 玩家 */
-.player-block {
+/* 实体 */
+.mouse-block, .cat-block, .exit-cell {
   position: absolute;
   inset: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: calc(var(--cell-size) * 0.55);
   z-index: 2;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
-  animation: player-bob 0.4s ease-in-out;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25));
+}
+.mouse-block { font-size: calc(var(--cell-size) * 0.55); animation: pop-in 0.35s ease; }
+.cat-block   { font-size: calc(var(--cell-size) * 0.55); z-index: 3; animation: pop-in 0.3s ease; }
+.exit-cell   { font-size: calc(var(--cell-size) * 0.5); z-index: 1; opacity: 0.7; }
+
+@keyframes pop-in {
+  0%   { transform: scale(0.5); }
+  70%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
 }
 
-/* 目标 */
-.goal-block {
-  position: absolute;
-  inset: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(var(--cell-size) * 0.5);
-  z-index: 1;
-  opacity: 0.8;
-}
-
-@keyframes player-bob {
-  0% {
-    transform: scale(0.6);
-  }
-  60% {
-    transform: scale(1.15);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-/* ===== 胜利弹层 ===== */
-.win-overlay {
+/* 弹层 */
+.overlay {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255,255,255,0.72);
   backdrop-filter: blur(4px);
   border-radius: 4px;
   z-index: 10;
 }
-
-.win-card {
+.overlay-card {
   background: #fff;
   border-radius: 16px;
   padding: 28px 36px;
   text-align: center;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.15);
 }
+.overlay-card h2 { margin: 0 0 6px; font-size: 24px; }
+.overlay-card p  { color: #666; margin: 0 0 16px; }
+.overlay-card.won  { border: 2px solid #4caf50; }
+.overlay-card.caught { border: 2px solid #e05a3d; }
+.overlay-stats {
+  display: flex; gap: 32px; justify-content: center;
+}
+.overlay-stats strong { font-size: 28px; color: #333; }
+.overlay-stats small  { font-size: 12px; color: #999; display: block; }
 
-.win-card h2 {
-  margin: 0 0 6px;
-  font-size: 24px;
-}
-
-.win-card p {
-  color: #666;
-  margin: 0 0 16px;
-}
-
-.win-stats {
-  display: flex;
-  gap: 32px;
-  justify-content: center;
-}
-
-.win-stats div {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.win-stats strong {
-  font-size: 28px;
-  color: #333;
-}
-
-.win-stats small {
-  font-size: 12px;
-  color: #999;
-}
-
-/* ===== Transition ===== */
-.fade-enter-active {
-  transition: opacity 0.4s ease;
-}
-.fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+.fade-enter-active { transition: opacity 0.4s ease; }
+.fade-leave-active { transition: opacity 0.25s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

@@ -1,96 +1,58 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import type { GameConfig } from '../types/maze'
 import { useStyle } from '../composables/useStyle'
 
-const props = defineProps<{
-  size: number
+defineProps<{
+  config: GameConfig
   disabled: boolean
 }>()
 
 const emit = defineEmits<{
-  start: [size: number]
+  start: []
   restart: []
+  openSettings: []
 }>()
 
 const { theme, setTheme, getThemeNames } = useStyle()
-
-const selectedSize = ref(props.size)
-const showThemeMenu = ref(false)
-
 const themeNames = getThemeNames()
-
-function handleStart() {
-  emit('start', selectedSize.value)
-}
-
-function handleRestart() {
-  emit('restart')
-}
-
-function selectTheme(name: string) {
-  setTheme(name)
-  showThemeMenu.value = false
-}
 </script>
 
 <template>
   <div class="game-controls">
     <div class="controls-row">
-      <!-- 难度选择 -->
-      <div class="control-group">
-        <label class="control-label">迷宫边长</label>
-        <div class="size-selector">
-          <input
-            v-model.number="selectedSize"
-            type="range"
-            min="10"
-            max="30"
-            step="2"
-            class="size-slider"
-            :disabled="disabled"
-          />
-          <span class="size-value">{{ selectedSize }} × {{ selectedSize }}</span>
-        </div>
-      </div>
-
-      <!-- 按钮组 -->
-      <div class="control-group">
-        <button
-          class="btn btn-primary"
-          @click="handleStart"
-          :disabled="disabled"
-        >
-          {{ disabled ? '游戏中...' : '生成迷宫' }}
-        </button>
-        <button
-          class="btn btn-secondary"
-          @click="handleRestart"
-          :disabled="!disabled"
-        >
-          重新开始
-        </button>
-      </div>
-
-      <!-- 风格主题 -->
-      <div class="control-group theme-group">
-        <label class="control-label">风格主题</label>
-        <div class="theme-picker">
-          <button
-            v-for="t in themeNames"
-            :key="t.name"
-            class="theme-chip"
-            :class="{ active: theme.name === t.name }"
-            @click="selectTheme(t.name)"
-          >
-            {{ t.label }}
-          </button>
-        </div>
-      </div>
+      <!-- 按钮 -->
+      <button class="btn btn-primary" @click="emit('start')" :disabled="disabled">
+        {{ disabled ? '游戏中...' : '开始游戏' }}
+      </button>
+      <button class="btn btn-secondary" @click="emit('restart')" :disabled="!disabled">
+        重新开始
+      </button>
+      <button class="btn btn-ghost" @click="emit('openSettings')">
+        ⚙️ 设置
+      </button>
     </div>
 
-    <!-- 操作提示 -->
+    <!-- 快捷信息 -->
+    <div class="info-row">
+      <span class="info-badge">{{ config.mazeSize }}×{{ config.mazeSize }}</span>
+      <span class="info-badge">🐱 {{ config.catSpawnDelay }}步后出现</span>
+      <span class="info-badge">⏱ {{ config.catMoveInterval }}s/步</span>
+
+      <span class="info-divider">|</span>
+
+      <button
+        v-for="t in themeNames"
+        :key="t.name"
+        class="theme-chip"
+        :class="{ active: theme.name === t.name }"
+        @click="setTheme(t.name)"
+      >
+        {{ t.label }}
+      </button>
+    </div>
+
     <div class="controls-hint">
-      <kbd>↑ ↓ ← →</kbd> 或 <kbd>W A S D</kbd> 控制猫咪移动
+      <kbd>↑ ↓ ← →</kbd> 或 <kbd>W A S D</kbd> 控制老鼠移动
     </div>
   </div>
 </template>
@@ -99,53 +61,16 @@ function selectTheme(name: string) {
 .game-controls {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
   max-width: 640px;
 }
 
 .controls-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.control-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-}
-
-.control-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-/* 尺寸滑块 */
-.size-selector {
-  display: flex;
-  align-items: center;
   gap: 10px;
-}
-
-.size-slider {
-  width: 120px;
-  accent-color: #1a1a2e;
-  cursor: pointer;
-}
-
-.size-value {
-  font-size: 15px;
-  font-weight: 700;
-  min-width: 68px;
-  color: #333;
-  font-variant-numeric: tabular-nums;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 /* 按钮 */
@@ -158,45 +83,45 @@ function selectTheme(name: string) {
   cursor: pointer;
   transition: all 0.15s ease;
 }
-
-.btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .btn-primary {
-  background: #1a1a2e;
-  color: #fff;
+  background: #1a1a2e; color: #fff;
 }
-
-.btn-primary:hover:not(:disabled) {
-  background: #2d2d4a;
-  transform: translateY(-1px);
-}
+.btn-primary:hover:not(:disabled) { background: #2d2d4a; transform: translateY(-1px); }
 
 .btn-secondary {
-  background: #fff;
-  color: #1a1a2e;
-  border-color: #ccc;
+  background: #fff; color: #1a1a2e; border-color: #ccc;
 }
+.btn-secondary:hover:not(:disabled) { border-color: #1a1a2e; transform: translateY(-1px); }
 
-.btn-secondary:hover:not(:disabled) {
-  border-color: #1a1a2e;
-  transform: translateY(-1px);
+.btn-ghost {
+  background: transparent; color: #888; border-color: transparent;
 }
+.btn-ghost:hover { color: #333; background: #f5f5f5; }
 
-/* 主题选择 */
-.theme-group {
-  min-width: 160px;
-}
-
-.theme-picker {
+/* 信息行 */
+.info-row {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
   justify-content: center;
+  flex-wrap: wrap;
+}
+.info-badge {
+  font-size: 12px;
+  padding: 3px 10px;
+  background: #f0f0f0;
+  border-radius: 12px;
+  color: #666;
+  white-space: nowrap;
+}
+.info-divider {
+  color: #ddd;
+  margin: 0 2px;
 }
 
+/* 主题 */
 .theme-chip {
   font-size: 12px;
   padding: 4px 12px;
@@ -207,17 +132,8 @@ function selectTheme(name: string) {
   cursor: pointer;
   transition: all 0.15s ease;
 }
-
-.theme-chip:hover {
-  border-color: #999;
-  color: #333;
-}
-
-.theme-chip.active {
-  background: #1a1a2e;
-  color: #fff;
-  border-color: #1a1a2e;
-}
+.theme-chip:hover { border-color: #999; color: #333; }
+.theme-chip.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
 
 /* 操作提示 */
 .controls-hint {
@@ -225,15 +141,11 @@ function selectTheme(name: string) {
   font-size: 13px;
   color: #aaa;
 }
-
 kbd {
   display: inline-block;
   padding: 1px 6px;
-  font-size: 12px;
-  font-family: inherit;
-  background: #f0f0f0;
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  margin: 0 2px;
+  font-size: 12px; font-family: inherit;
+  background: #f0f0f0; border: 1px solid #d0d0d0;
+  border-radius: 4px; margin: 0 2px;
 }
 </style>

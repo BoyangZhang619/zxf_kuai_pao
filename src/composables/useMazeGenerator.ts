@@ -319,3 +319,79 @@ export function canMove(
       return pos.col < size - 1
   }
 }
+
+/** 方向到坐标偏移 */
+const DIR_DELTAS: Record<Direction, { dr: number; dc: number }> = {
+  up: { dr: -1, dc: 0 },
+  down: { dr: 1, dc: 0 },
+  left: { dr: 0, dc: -1 },
+  right: { dr: 0, dc: 1 },
+}
+
+const ALL_DIRECTIONS: Direction[] = ['up', 'down', 'left', 'right']
+
+/**
+ * BFS 寻路：返回从 from 到 to 的下一步方向
+ * 这是猫的 AI 核心——每一步都朝老鼠走最短路径
+ */
+export function bfsNextStep(
+  maze: Cell[][],
+  from: Position,
+  to: Position,
+  size: number,
+): Direction | null {
+  if (from.row === to.row && from.col === to.col) return null
+
+  const visited: boolean[][] = Array.from({ length: size }, () =>
+    Array(size).fill(false),
+  )
+  visited[from.row][from.col] = true
+
+  interface QueueItem {
+    pos: Position
+    firstStep: Direction
+  }
+
+  const queue: QueueItem[] = []
+
+  // 将四个方向的初始步入队
+  for (const dir of ALL_DIRECTIONS) {
+    if (canMove(maze, from, dir, size)) {
+      const { dr, dc } = DIR_DELTAS[dir]
+      const nr = from.row + dr
+      const nc = from.col + dc
+      if (nr === to.row && nc === to.col) return dir
+      visited[nr][nc] = true
+      queue.push({ pos: { row: nr, col: nc }, firstStep: dir })
+    }
+  }
+
+  let head = 0
+  while (head < queue.length) {
+    const { pos, firstStep } = queue[head++]
+    if (pos.row === to.row && pos.col === to.col) return firstStep
+
+    for (const dir of ALL_DIRECTIONS) {
+      if (canMove(maze, pos, dir, size)) {
+        const { dr, dc } = DIR_DELTAS[dir]
+        const nr = pos.row + dr
+        const nc = pos.col + dc
+        if (!visited[nr][nc]) {
+          if (nr === to.row && nc === to.col) return firstStep
+          visited[nr][nc] = true
+          queue.push({ pos: { row: nr, col: nc }, firstStep })
+        }
+      }
+    }
+  }
+
+  return null // 无路径（不应该发生）
+}
+
+/**
+ * 根据方向移动位置
+ */
+export function movePosition(pos: Position, dir: Direction): Position {
+  const { dr, dc } = DIR_DELTAS[dir]
+  return { row: pos.row + dr, col: pos.col + dc }
+}

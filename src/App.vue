@@ -1,14 +1,24 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
+import type { GameConfig } from './types/maze'
 import GameControls from './components/GameControls.vue'
 import MazeBoard from './components/MazeBoard.vue'
+import SettingsPanel from './components/SettingsPanel.vue'
 
-const mazeSize = ref(16)
+// ============ 默认配置 ============
+const defaultConfig: GameConfig = {
+  catSpawnDelay: 5,
+  catMoveInterval: 0.5,
+  mazeSize: 16,
+}
+
+const config = reactive<GameConfig>({ ...defaultConfig })
 const gameKey = ref(0)
 const isPlaying = ref(false)
+const showSettings = ref(false)
 
-function handleStart(size: number) {
-  mazeSize.value = size
+// ============ 操作 ============
+function handleStart() {
   gameKey.value++
   isPlaying.value = true
 }
@@ -17,7 +27,13 @@ function handleRestart() {
   gameKey.value++
 }
 
-function handleWon(moves: number, time: number) {
+function handleApply(newConfig: GameConfig) {
+  Object.assign(config, newConfig)
+  gameKey.value++
+  isPlaying.value = false
+}
+
+function handleGameOver() {
   isPlaying.value = false
 }
 </script>
@@ -30,16 +46,25 @@ function handleWon(moves: number, time: number) {
     </header>
 
     <GameControls
-      :size="mazeSize"
+      :config="config"
       :disabled="isPlaying"
       @start="handleStart"
       @restart="handleRestart"
+      @open-settings="showSettings = true"
     />
 
     <MazeBoard
       :key="gameKey"
-      :size="mazeSize"
-      @won="handleWon"
+      :config="config"
+      @won="handleGameOver"
+      @caught="handleGameOver"
+    />
+
+    <SettingsPanel
+      :config="config"
+      :visible="showSettings"
+      @close="showSettings = false"
+      @apply="handleApply"
     />
   </div>
 </template>

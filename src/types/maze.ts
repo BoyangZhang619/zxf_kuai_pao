@@ -20,18 +20,30 @@ export interface Position {
 }
 
 /** 游戏阶段 */
-export type GamePhase = 'config' | 'playing' | 'won'
+export type GamePhase = 'config' | 'playing' | 'won' | 'caught'
 
 /** 方向 */
 export type Direction = 'up' | 'down' | 'left' | 'right'
+
+/** 可配置的游戏参数 */
+export interface GameConfig {
+  /** 猫出现的延迟步数 */
+  catSpawnDelay: number
+  /** 猫移动间隔（秒） */
+  catMoveInterval: number
+  /** 迷宫边长 */
+  mazeSize: number
+}
 
 /** 游戏完整状态 */
 export interface GameState {
   phase: GamePhase
   size: number
   maze: Cell[][]
-  playerPos: Position
-  goalPos: Position
+  mousePos: Position
+  exitPos: Position
+  catPos: Position | null
+  catActive: boolean
   moves: number
   startTime: number | null
   endTime: number | null
@@ -41,16 +53,11 @@ export interface GameState {
 export interface StyleTheme {
   name: string
   label: string
-  /** 墙壁颜色 */
   wallColor: string
-  /** 路径颜色 */
   pathColor: string
-  /** 玩家（猫）颜色 */
-  playerColor: string
-  /** 目标（老鼠）颜色 */
-  goalColor: string
-  /** 背景颜色 */
+  mouseColor: string
+  catColor: string
+  exitColor: string
   backgroundColor: string
-  /** 玩家已走过的路径高亮色 */
   trailColor: string
 }
