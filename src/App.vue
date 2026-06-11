@@ -4,6 +4,7 @@ import type { GameConfig, Direction } from './types/maze'
 import GameControls from './components/GameControls.vue'
 import MazeBoard from './components/MazeBoard.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
+import TutorialOverlay from './components/TutorialOverlay.vue'
 import { gameInfo } from './composables/useGameInfo'
 
 // ============ 检测触屏设备 ============
@@ -12,26 +13,37 @@ const isTouchDevice =
   navigator.maxTouchPoints > 0 ||
   /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent)
 
-// ============ 默认配置 ============
-const defaultConfig: GameConfig = {
-  catSpawnDelay: 5,
-  catMoveInterval: 0.5,
-  mazeSize: 10,
-  wallDensity: 60,
-  trapCount: 4,
-  trapStunDuration: 1,
-  jerkyCount: 3,
-  sugarWaterCount: 3,
+// ============ localStorage 持久化 ============
+const STORAGE_KEY = 'escape-zhang-config'
+
+function loadConfig(): GameConfig | null {
+  try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : null }
+  catch { return null }
+}
+function saveConfig(cfg: GameConfig) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)) } catch { /* noop */ }
 }
 
-const config = reactive<GameConfig>({ ...defaultConfig })
+const defaultConfig: GameConfig = {
+  catSpawnDelay: 5, catMoveInterval: 0.5, mazeSize: 10,
+  wallDensity: 60, trapCount: 4, trapStunDuration: 1,
+  jerkyCount: 3, sugarWaterCount: 3, showItemToasts: true,
+}
+
+const saved = loadConfig()
+const config = reactive<GameConfig>(saved ? { ...defaultConfig, ...saved } : { ...defaultConfig })
 const gameKey = ref(0)
 const isPlaying = ref(false)
 const showSettings = ref(false)
+const showTutorial = ref(!localStorage.getItem('escape-zhang-tutorial'))
 
 function handleStart() { gameKey.value++; isPlaying.value = true }
 function handleRestart() { gameKey.value++; isPlaying.value = true }
-function handleApply(newConfig: GameConfig) { Object.assign(config, newConfig); gameKey.value++; isPlaying.value = false }
+function handleApply(newConfig: GameConfig) {
+  Object.assign(config, newConfig); gameKey.value++; isPlaying.value = false
+  saveConfig(newConfig)
+}
+function handleTutorialClose() { showTutorial.value = false }
 
 // ============ 移动端方向键 ============
 function tapDir(dir: Direction) {
@@ -45,7 +57,7 @@ function tapDir(dir: Direction) {
 <template>
   <div class="app-root" :class="{ mobile: isTouchDevice }">
     <header class="app-header">
-      <h1>张雪峰快跑</h1>
+      <h1>逃离张雪峰</h1>
     </header>
 
     <GameControls
@@ -119,6 +131,11 @@ function tapDir(dir: Direction) {
       :visible="showSettings"
       @close="showSettings = false"
       @apply="handleApply"
+    />
+
+    <TutorialOverlay
+      v-if="showTutorial"
+      @close="handleTutorialClose"
     />
   </div>
 </template>

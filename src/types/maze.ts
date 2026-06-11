@@ -55,6 +55,7 @@ export interface GameConfig {
   trapStunDuration: number
   jerkyCount: number
   sugarWaterCount: number
+  showItemToasts: boolean
 }
 
 /** 游戏完整状态 */

@@ -195,6 +195,24 @@ function handleCancel() {
             </div>
           </section>
 
+          <!-- ====== 显示设置 ====== -->
+          <section class="setting-section">
+            <h4 class="section-title">👁 显示</h4>
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">物品接触提示</span>
+                <span class="setting-desc">碰到物品/陷阱时屏幕中央显示图标动画</span>
+              </div>
+              <button
+                class="toggle-switch"
+                :class="{ on: local.showItemToasts }"
+                @click="local.showItemToasts = !local.showItemToasts"
+              >
+                <span class="toggle-knob" />
+              </button>
+            </div>
+          </section>
+
           <!-- ====== 风格主题 ====== -->
           <section class="setting-section">
             <h4 class="section-title">🎨 风格主题</h4>
@@ -362,6 +380,23 @@ function handleCancel() {
   justify-content: center;
 }
 .stepper-btn:hover { background: #e8e8e8; color: #1a1a2e; }
+
+/* 开关 */
+.toggle-switch {
+  width: 48px; height: 28px; border-radius: 14px;
+  border: none; background: #d0d0d0; cursor: pointer;
+  position: relative; flex-shrink: 0;
+  transition: background 0.2s;
+}
+.toggle-switch.on { background: #1a1a2e; }
+.toggle-knob {
+  position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: left 0.2s;
+}
+.toggle-switch.on .toggle-knob { left: 23px; }
+
 .stepper-value {
   min-width: 44px;
   text-align: center;

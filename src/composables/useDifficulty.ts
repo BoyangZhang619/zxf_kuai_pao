@@ -31,6 +31,7 @@ export const DIFFICULTY_PRESETS: DifficultyPreset[] = [
       catMoveInterval: 0.9,
       jerkyCount: 5,
       sugarWaterCount: 4,
+      showItemToasts: true,
     },
   },
   {
@@ -46,6 +47,7 @@ export const DIFFICULTY_PRESETS: DifficultyPreset[] = [
       catMoveInterval: 0.6,
       jerkyCount: 4,
       sugarWaterCount: 3,
+      showItemToasts: true,
     },
   },
   {
@@ -61,6 +63,7 @@ export const DIFFICULTY_PRESETS: DifficultyPreset[] = [
       catMoveInterval: 0.45,
       jerkyCount: 3,
       sugarWaterCount: 2,
+      showItemToasts: true,
     },
   },
   {
@@ -76,6 +79,7 @@ export const DIFFICULTY_PRESETS: DifficultyPreset[] = [
       catMoveInterval: 0.3,
       jerkyCount: 1,
       sugarWaterCount: 1,
+      showItemToasts: true,
     },
   },
   {
@@ -91,6 +95,7 @@ export const DIFFICULTY_PRESETS: DifficultyPreset[] = [
       catMoveInterval: 0.2,
       jerkyCount: 0,
       sugarWaterCount: 0,
+      showItemToasts: true,
     },
   },
 ]

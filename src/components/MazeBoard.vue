@@ -157,6 +157,7 @@ function moveCat() {
   // 踩陷阱
   if (trapSet.value.has(`${catPos.value.row},${catPos.value.col}`)) {
     catStunnedUntil.value = now + props.config.trapStunDuration * 1000
+    triggerToast('/zazhong.jpg')
   }
 
   // 遇到道具
@@ -177,12 +178,12 @@ function checkCatItem() {
   const now = Date.now()
 
   if (item.type === 'jerky') {
-    // 猫吃巧乐兹：停3秒 + 5秒双倍速
     catBuffs.value.eatingUntil = now + 3000
-    catBuffs.value.speedBoostUntil = Math.max(catBuffs.value.speedBoostUntil, now) + 5000 // 可叠加
+    catBuffs.value.speedBoostUntil = Math.max(catBuffs.value.speedBoostUntil, now) + 5000
+    triggerToast('/qiaolezi.jpg')
   } else if (item.type === 'sugarWater') {
-    // 猫喝雪碧：穿墙1秒
     catBuffs.value.wallPhaseUntil = Math.max(catBuffs.value.wallPhaseUntil, now) + 1000
+    triggerToast('/xuebi.jpg')
   }
 }
 
@@ -203,6 +204,7 @@ function moveMouse(dir: Direction) {
 
     if (trapSet.value.has(`${mousePos.value.row},${mousePos.value.col}`)) {
       mouseStunnedUntil.value = Date.now() + props.config.trapStunDuration * 1000
+      triggerToast('/zazhong.jpg')
     }
 
     if (!catActive.value && moves.value >= props.config.catSpawnDelay) spawnCat()
@@ -223,6 +225,7 @@ function pickupItem() {
   if (idx === -1 || groundItems.value[idx].type !== 'jerky') return
   inventory.value = 'jerky'
   groundItems.value.splice(idx, 1)
+  triggerToast('/qiaolezi.jpg')
 }
 
 function dropItem() {
@@ -238,6 +241,7 @@ function drinkSugarWater() {
   const idx = groundItems.value.findIndex(it => it.row === mousePos.value.row && it.col === mousePos.value.col && it.type === 'sugarWater')
   if (idx === -1) return
   groundItems.value.splice(idx, 1)
+  triggerToast('/xuebi.jpg')
 
   // 消除 5×5 内随机 5 面墙
   destroyWalls5x5()
@@ -356,6 +360,17 @@ const visionMaskStyle = computed(() => {
   }
 })
 
+// 物品接触提示
+interface Toast { id: number; src: string }
+const toasts = ref<Toast[]>([])
+let toastId = 0
+function triggerToast(src: string) {
+  if (!props.config.showItemToasts) return
+  const id = ++toastId
+  toasts.value.push({ id, src })
+  setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id) }, 1800)
+}
+
 const isTouch = ref(false)
 onMounted(() => {
   isTouch.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0
@@ -430,6 +445,13 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
       <!-- 老鼠视野缩小遮罩 -->
       <div v-if="isVisionReduced()" class="vision-mask" :style="visionMaskStyle" />
     </div>
+
+    <!-- 物品接触提示动画 -->
+    <TransitionGroup name="toast" tag="div" class="toast-layer">
+      <div v-for="t in toasts" :key="t.id" class="contact-toast">
+        <img :src="t.src" class="contact-img" />
+      </div>
+    </TransitionGroup>
 
     <!-- 状态标签 -->
     <div v-if="isMouseStunned()" class="status-toast trap">⚡ 被陷阱困住！</div>
@@ -590,4 +612,19 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
 
 .fade-enter-active { transition: opacity 0.4s ease; } .fade-leave-active { transition: opacity 0.25s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+/* 接触提示动画 */
+.toast-layer {
+  position: fixed; inset: 0; pointer-events: none; z-index: 60;
+  display: flex; align-items: center; justify-content: center;
+}
+.contact-toast { position: absolute; }
+.contact-img {
+  width: 120px; height: 120px; object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+}
+.toast-enter-active { transition: all 0.6s ease-out; }
+.toast-leave-active { transition: all 0.6s ease-in; }
+.toast-enter-from { opacity: 0; transform: translateX(-120px) scale(0.6); }
+.toast-leave-to   { opacity: 0; transform: translateX(120px) scale(0.6); }
 </style>
