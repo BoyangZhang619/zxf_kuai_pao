@@ -1,4 +1,4 @@
-import type { Cell, Position, Direction, GroundItem, ItemType } from '../types/maze'
+import type { Cell, Position, Direction, GroundItem } from '../types/maze'
 
 // ============ 迷宫生成 ============
 
@@ -25,7 +25,7 @@ function removeWall(a: Cell, b: Cell, dir: Direction): void {
 }
 
 function getUnvisitedNeighbors(
-  cell: Cell, grid: Cell[][], visited: boolean[][], size: number,
+  cell: Cell, visited: boolean[][], size: number,
 ): Direction[] {
   const { row, col } = cell
   const dirs: Direction[] = []
@@ -53,7 +53,7 @@ function carvePassages(grid: Cell[][], size: number): void {
 
   while (stack.length > 0) {
     const current = stack[stack.length - 1]
-    const neighbors = getUnvisitedNeighbors(current, grid, visited, size)
+    const neighbors = getUnvisitedNeighbors(current, visited, size)
     if (neighbors.length === 0) { stack.pop(); continue }
     const dir = shuffle(neighbors)[0]
     const next = getNeighbor(current, grid, dir, size)!

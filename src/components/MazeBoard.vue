@@ -10,7 +10,8 @@ const emit = defineEmits<{
   caught: [moves: number]
 }>()
 
-const { theme } = useStyle()
+// 初始化主题（useStyle 会将 CSS 变量写入 document.documentElement）
+useStyle()
 
 // ============ 游戏状态 ============
 const phase = ref<GamePhase>('playing')
