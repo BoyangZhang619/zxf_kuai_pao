@@ -165,11 +165,11 @@ function checkCatItem() {
   const now = Date.now()
 
   if (item.type === 'jerky') {
-    // 猫吃肉干：停3秒 + 5秒双倍速
+    // 猫吃巧乐兹：停3秒 + 5秒双倍速
     catBuffs.value.eatingUntil = now + 3000
     catBuffs.value.speedBoostUntil = Math.max(catBuffs.value.speedBoostUntil, now) + 5000 // 可叠加
   } else if (item.type === 'sugarWater') {
-    // 猫喝糖水：穿墙1秒
+    // 猫喝雪碧：穿墙1秒
     catBuffs.value.wallPhaseUntil = Math.max(catBuffs.value.wallPhaseUntil, now) + 1000
   }
 }
@@ -365,7 +365,7 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
       <div class="hud-item" v-if="inventory || trapSet.size > 0">
         <span class="hud-label">物品栏</span>
         <span class="hud-value hud-small">
-          {{ inventory === 'jerky' ? '🍖 肉干 [可放下]' : '空' }}
+          {{ inventory === 'jerky' ? '🍖 巧乐兹 [可放下]' : '空' }}
         </span>
       </div>
     </div>
@@ -414,16 +414,16 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
 
     <!-- 状态标签 -->
     <div v-if="isMouseStunned() && firstMoveMade" class="status-toast trap">⚡ 被陷阱困住！</div>
-    <div v-if="isCatEating()" class="status-toast eat">🍖 张雪峰在吃肉干 (3秒)...</div>
+    <div v-if="isCatEating()" class="status-toast eat">🍖 张雪峰在吃巧乐兹 (3秒)...</div>
     <div v-if="hasCatSpeed() && !isCatEating()" class="status-toast speed">⚡ 张雪峰双倍速中！</div>
     <div v-if="hasCatWallPhase()" class="status-toast phase">👻 张雪峰穿墙中！</div>
     <div v-if="isVisionReduced()" class="status-toast vision">👁 视野缩小 (5×5) 1秒...</div>
 
     <!-- 移动端操作按钮 -->
     <div v-if="isTouch" class="action-buttons">
-      <button v-if="canPickup()" class="act-btn pickup" @pointerdown.prevent="pickupItem">📦 拾取肉干</button>
-      <button v-if="canDrink()" class="act-btn drink" @pointerdown.prevent="drinkSugarWater">🧪 饮用糖水</button>
-      <button v-if="canDrop()" class="act-btn drop" @pointerdown.prevent="dropItem">📍 放下肉干</button>
+      <button v-if="canPickup()" class="act-btn pickup" @pointerdown.prevent="pickupItem">📦 拾取巧乐兹</button>
+      <button v-if="canDrink()" class="act-btn drink" @pointerdown.prevent="drinkSugarWater">🧪 饮用雪碧</button>
+      <button v-if="canDrop()" class="act-btn drop" @pointerdown.prevent="dropItem">📍 放下巧乐兹</button>
     </div>
 
     <!-- 游戏结束 -->

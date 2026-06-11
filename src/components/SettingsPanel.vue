@@ -154,7 +154,7 @@ function handleCancel() {
 
             <div class="setting-row">
               <div class="setting-info">
-                <span class="setting-label">🍖 肉干数量</span>
+                <span class="setting-label">🍖 巧乐兹数量</span>
                 <span class="setting-desc">张雪峰吃→暂停3s+5s双倍速；可携带放下</span>
               </div>
               <div class="stepper">
@@ -166,7 +166,7 @@ function handleCancel() {
 
             <div class="setting-row">
               <div class="setting-info">
-                <span class="setting-label">🧪 糖水数量</span>
+                <span class="setting-label">🧪 雪碧数量</span>
                 <span class="setting-desc">张雪峰喝→穿墙1s；人喝→消5面墙+1s窄视野</span>
               </div>
               <div class="stepper">
