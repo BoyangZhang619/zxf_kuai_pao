@@ -7,8 +7,7 @@ import { gameInfo, resetGameInfo } from '../composables/useGameInfo'
 
 const props = defineProps<{ config: GameConfig }>()
 const emit = defineEmits<{
-  won: [moves: number, time: number]
-  caught: [moves: number]
+  restart: []
 }>()
 
 // 初始化主题（useStyle 会将 CSS 变量写入 document.documentElement）
@@ -294,7 +293,7 @@ function onBelieve() {
   setTimeout(() => emitRestart(), 1800)
 }
 function emitRestart() {
-  emit('won', moves.value, Math.floor((endTime.value - startTime.value) / 1000))
+  emit('restart')
 }
 
 // ============ 键盘 ============

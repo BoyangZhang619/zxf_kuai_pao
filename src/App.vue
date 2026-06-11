@@ -30,9 +30,8 @@ const isPlaying = ref(false)
 const showSettings = ref(false)
 
 function handleStart() { gameKey.value++; isPlaying.value = true }
-function handleRestart() { gameKey.value++ }
+function handleRestart() { gameKey.value++; isPlaying.value = true }
 function handleApply(newConfig: GameConfig) { Object.assign(config, newConfig); gameKey.value++; isPlaying.value = false }
-function handleGameOver() { isPlaying.value = false }
 
 // ============ 移动端方向键 ============
 function tapDir(dir: Direction) {
@@ -60,8 +59,7 @@ function tapDir(dir: Direction) {
     <MazeBoard
       :key="gameKey"
       :config="config"
-      @won="handleGameOver"
-      @caught="handleGameOver"
+      @restart="handleRestart"
     />
 
     <!-- 桌面端键盘提示 -->
