@@ -60,7 +60,7 @@ function tapDir(dir: Direction) {
 <template>
   <div class="app-root">
     <header class="app-header">
-      <h1>🐱 猫抓老鼠 🐭</h1>
+      <h1>张雪峰快跑</h1>
     </header>
 
     <GameControls

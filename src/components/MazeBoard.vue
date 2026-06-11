@@ -265,12 +265,12 @@ function destroyWalls5x5() {
 // ============ 胜利/失败 ============
 function triggerWin() {
   phase.value = 'won'; endTime.value = Date.now(); stopCatTimer(); stopClock()
-  gameOverMessage.value = '老鼠成功逃出迷宫！'
+  gameOverMessage.value = '成功逃出迷宫！'
   setTimeout(() => emit('won', moves.value, Math.floor((endTime.value - startTime.value) / 1000)), 600)
 }
 function triggerCaught() {
   phase.value = 'caught'; endTime.value = Date.now(); stopCatTimer(); stopClock()
-  gameOverMessage.value = '猫抓住了老鼠！'
+  gameOverMessage.value = '你跑不过我信不信'
   setTimeout(() => emit('caught', moves.value), 600)
 }
 
@@ -353,9 +353,9 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
       <div class="hud-item"><span class="hud-label">时间</span><span class="hud-value">{{ elapsed }}</span></div>
       <div class="hud-item">
         <span class="hud-label cat-indicator" :class="{ active: catActive }">
-          <template v-if="hasCatWallPhase()">👻 猫穿墙中</template>
-          <template v-else-if="isCatEating()">🍖 猫进食中</template>
-          <template v-else>{{ catActive ? '🐱 追击中' : '😴 猫未醒' }}</template>
+          <template v-if="hasCatWallPhase()">👻 张雪峰穿墙中</template>
+          <template v-else-if="isCatEating()">🍖 张雪峰进食中</template>
+          <template v-else>{{ catActive ? '张雪峰追击中' : '😴 张雪峰未醒' }}</template>
         </span>
         <span class="hud-value hud-small">
           <template v-if="hasCatSpeed()">⚡双倍速</template>
@@ -387,20 +387,23 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
         <template v-for="r in config.mazeSize" :key="'row-' + r">
           <div v-for="c in config.mazeSize" :key="'cell-' + r + '-' + c" :class="cellClasses(maze[r - 1][c - 1])">
             <div v-if="isOnTrail(r - 1, c - 1)" class="trail-mark" />
-            <div v-if="isTrap(r - 1, c - 1)" class="trap-mark">⚡</div>
+            <img v-if="isTrap(r - 1, c - 1)" src="/zazhong.jpg" class="trap-mark" />
             <div v-if="isGoal(r - 1, c - 1)" class="exit-cell">🚪</div>
 
             <!-- 地上道具 -->
-            <div v-if="isGroundItem(r - 1, c - 1) && !(mousePos.row === r - 1 && mousePos.col === c - 1) && !(catPos && catPos.row === r - 1 && catPos.col === c - 1)"
-              class="item-mark" :class="getGroundItem(r - 1, c - 1)?.type">
-              {{ getGroundItem(r - 1, c - 1)?.type === 'jerky' ? '🍖' : '🧪' }}
-            </div>
+            <img
+              v-if="isGroundItem(r - 1, c - 1) && !(mousePos.row === r - 1 && mousePos.col === c - 1) && !(catPos && catPos.row === r - 1 && catPos.col === c - 1)"
+              :src="getGroundItem(r - 1, c - 1)?.type === 'jerky' ? '/qiaolezi.jpg' : '/xuebi.jpg'"
+              class="item-mark"
+              :class="getGroundItem(r - 1, c - 1)?.type"
+            />
 
             <div v-if="mousePos.row === r - 1 && mousePos.col === c - 1"
-              class="mouse-block" :class="{ stunned: isMouseStunned() }">🐭</div>
-            <div v-if="catPos && catPos.row === r - 1 && catPos.col === c - 1 && !(mousePos.row === r - 1 && mousePos.col === c - 1)"
+              class="mouse-block" :class="{ stunned: isMouseStunned() }">🚶</div>
+            <img v-if="catPos && catPos.row === r - 1 && catPos.col === c - 1 && !(mousePos.row === r - 1 && mousePos.col === c - 1)"
+              src="/zhangxuefeng.png"
               class="cat-block"
-              :class="{ stunned: isCatStunned(), eating: isCatEating(), phasing: hasCatWallPhase(), speedy: hasCatSpeed() }">🐱</div>
+              :class="{ stunned: isCatStunned(), eating: isCatEating(), phasing: hasCatWallPhase(), speedy: hasCatSpeed() }" />
           </div>
         </template>
       </div>
@@ -411,9 +414,9 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
 
     <!-- 状态标签 -->
     <div v-if="isMouseStunned() && firstMoveMade" class="status-toast trap">⚡ 被陷阱困住！</div>
-    <div v-if="isCatEating()" class="status-toast eat">🍖 猫在吃肉干 (3秒)...</div>
-    <div v-if="hasCatSpeed() && !isCatEating()" class="status-toast speed">⚡ 猫双倍速中！</div>
-    <div v-if="hasCatWallPhase()" class="status-toast phase">👻 猫穿墙中！</div>
+    <div v-if="isCatEating()" class="status-toast eat">🍖 张雪峰在吃肉干 (3秒)...</div>
+    <div v-if="hasCatSpeed() && !isCatEating()" class="status-toast speed">⚡ 张雪峰双倍速中！</div>
+    <div v-if="hasCatWallPhase()" class="status-toast phase">👻 张雪峰穿墙中！</div>
     <div v-if="isVisionReduced()" class="status-toast vision">👁 视野缩小 (5×5) 1秒...</div>
 
     <!-- 移动端操作按钮 -->
@@ -427,7 +430,7 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
     <Transition name="fade">
       <div v-if="phase === 'won' || phase === 'caught'" class="overlay">
         <div class="overlay-card" :class="phase">
-          <h2>{{ phase === 'won' ? '🎉 逃脱成功！' : '😿 被抓住了！' }}</h2>
+          <h2>{{ phase === 'won' ? '🎉 逃脱成功！' : '你跑不过我信不信' }}</h2>
           <p>{{ gameOverMessage }}</p>
           <div class="overlay-stats">
             <div><strong>{{ moves }}</strong><small>步数</small></div>
@@ -461,10 +464,10 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
 .maze-cell.no-bottom { border-bottom-color: transparent; } .maze-cell.no-left { border-left-color: transparent; }
 
 .trail-mark { position: absolute; inset: 1px; background: var(--maze-trail, rgba(74,144,217,0.12)); border-radius: 2px; pointer-events: none; }
-.trap-mark { position: absolute; inset: 2px; z-index: 1; display: flex; align-items: center; justify-content: center; font-size: calc(var(--cell-size) * 0.4); opacity: 0.5; pointer-events: none; }
+.trap-mark { position: absolute; inset: 4px; z-index: 1; width: calc(100% - 8px); height: calc(100% - 8px); object-fit: contain; opacity: 0.65; pointer-events: none; }
 
 /* 地上道具 */
-.item-mark { position: absolute; inset: 2px; z-index: 1; display: flex; align-items: center; justify-content: center; font-size: calc(var(--cell-size) * 0.45); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)); pointer-events: none; }
+.item-mark { position: absolute; inset: 6px; z-index: 1; width: calc(100% - 12px); height: calc(100% - 12px); object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)); pointer-events: none; }
 .item-mark.jerky { animation: float 1.2s infinite alternate; }
 .item-mark.sugarWater { animation: float 1.5s infinite alternate; }
 @keyframes float { from { transform: translateY(0); } to { transform: translateY(-3px); } }
@@ -473,7 +476,7 @@ defineExpose({ initGame, pickupItem, dropItem, drinkSugarWater })
 .mouse-block, .cat-block, .exit-cell { position: absolute; inset: 2px; display: flex; align-items: center; justify-content: center; z-index: 2; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); }
 .mouse-block { font-size: calc(var(--cell-size) * 0.55); animation: pop-in 0.35s ease; }
 .mouse-block.stunned { filter: drop-shadow(0 0 6px var(--maze-trap, #e74c3c)); animation: shake 0.3s infinite; }
-.cat-block { font-size: calc(var(--cell-size) * 0.55); z-index: 3; animation: pop-in 0.3s ease; }
+.cat-block { position: absolute; inset: 2px; z-index: 3; width: calc(100% - 4px); height: calc(100% - 4px); object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.25)); animation: pop-in 0.3s ease; }
 .cat-block.stunned { filter: drop-shadow(0 0 6px var(--maze-trap, #e74c3c)); animation: shake 0.3s infinite; }
 .cat-block.eating { filter: drop-shadow(0 0 8px #f39800); animation: nom 0.5s infinite; }
 .cat-block.phasing { filter: drop-shadow(0 0 10px #9b59b6); animation: phase-pulse 0.4s infinite; }

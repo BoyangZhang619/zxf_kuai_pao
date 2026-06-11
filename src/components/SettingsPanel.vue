@@ -44,15 +44,15 @@ function handleCancel() {
         </div>
 
         <div class="panel-body">
-          <!-- ====== 猫的设置 ====== -->
+          <!-- ====== 张雪峰的设置 ====== -->
           <section class="setting-section">
-            <h4 class="section-title">🐱 猫的行为</h4>
+            <h4 class="section-title">张雪峰的行为</h4>
 
-            <!-- 猫出现延迟步数 -->
+            <!-- 张雪峰出现延迟步数 -->
             <div class="setting-row">
               <div class="setting-info">
-                <span class="setting-label">猫出现步数</span>
-                <span class="setting-desc">老鼠走多少步后，猫从起点开始追击</span>
+                <span class="setting-label">张雪峰出现步数</span>
+                <span class="setting-desc">走多少步后，张雪峰从起点开始追击</span>
               </div>
               <div class="stepper">
                 <button class="stepper-btn" @click="local.catSpawnDelay = Math.max(1, local.catSpawnDelay - 1)">−</button>
@@ -61,11 +61,11 @@ function handleCancel() {
               </div>
             </div>
 
-            <!-- 猫移动间隔 -->
+            <!-- 张雪峰移动间隔 -->
             <div class="setting-row">
               <div class="setting-info">
-                <span class="setting-label">猫移动间隔</span>
-                <span class="setting-desc">猫每多少秒移动一步（BFS 最短路径）</span>
+                <span class="setting-label">张雪峰移动间隔</span>
+                <span class="setting-desc">张雪峰每多少秒移动一步（BFS 最短路径）</span>
               </div>
               <div class="stepper">
                 <button class="stepper-btn" @click="local.catMoveInterval = Math.max(0.1, +(local.catMoveInterval - 0.1).toFixed(1))">−</button>
@@ -155,7 +155,7 @@ function handleCancel() {
             <div class="setting-row">
               <div class="setting-info">
                 <span class="setting-label">🍖 肉干数量</span>
-                <span class="setting-desc">猫吃→暂停3s+5s双倍速；鼠可携带放下</span>
+                <span class="setting-desc">张雪峰吃→暂停3s+5s双倍速；可携带放下</span>
               </div>
               <div class="stepper">
                 <button class="stepper-btn" @click="local.jerkyCount = Math.max(0, local.jerkyCount - 1)">−</button>
@@ -167,7 +167,7 @@ function handleCancel() {
             <div class="setting-row">
               <div class="setting-info">
                 <span class="setting-label">🧪 糖水数量</span>
-                <span class="setting-desc">猫喝→穿墙1s；鼠喝→消5面墙+1s窄视野</span>
+                <span class="setting-desc">张雪峰喝→穿墙1s；人喝→消5面墙+1s窄视野</span>
               </div>
               <div class="stepper">
                 <button class="stepper-btn" @click="local.sugarWaterCount = Math.max(0, local.sugarWaterCount - 1)">−</button>

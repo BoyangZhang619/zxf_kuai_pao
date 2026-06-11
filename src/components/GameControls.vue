@@ -30,7 +30,7 @@ const emit = defineEmits<{
     <!-- 快捷信息 -->
     <div class="info-row">
       <span class="info-badge">{{ config.mazeSize }}×{{ config.mazeSize }}</span>
-      <span class="info-badge">🐱 {{ config.catSpawnDelay }}步后出现</span>
+      <span class="info-badge">张雪峰 {{ config.catSpawnDelay }}步后出现</span>
       <span class="info-badge">⏱ {{ config.catMoveInterval }}s/步</span>
     </div>
   </div>
