@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import type { GameConfig } from '../types/maze'
 import { useStyle } from '../composables/useStyle'
+import { DIFFICULTY_PRESETS } from '../composables/useDifficulty'
 
 const props = defineProps<{
   config: GameConfig
@@ -44,6 +45,23 @@ function handleCancel() {
         </div>
 
         <div class="panel-body">
+          <!-- ====== 难度预设 ====== -->
+          <section class="setting-section">
+            <h4 class="section-title">📊 难度预设</h4>
+            <div class="difficulty-row">
+              <button
+                v-for="d in DIFFICULTY_PRESETS"
+                :key="d.key"
+                class="diff-chip"
+                :class="{ active: local.catSpawnDelay === d.config.catSpawnDelay && local.mazeSize === d.config.mazeSize && local.trapCount === d.config.trapCount }"
+                :title="d.desc"
+                @click="Object.assign(local, d.config)"
+              >
+                {{ d.label }}
+              </button>
+            </div>
+          </section>
+
           <!-- ====== 张雪峰的设置 ====== -->
           <section class="setting-section">
             <h4 class="section-title">张雪峰的行为</h4>
@@ -271,6 +289,23 @@ function handleCancel() {
   flex-direction: column;
   gap: 14px;
 }
+
+/* 难度预设 */
+.difficulty-row {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.diff-chip {
+  flex: 1; min-width: 52px;
+  font-size: 13px; font-weight: 600;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 2px solid #e0e0e0;
+  background: #fff; color: #888;
+  cursor: pointer; transition: all 0.15s;
+}
+.diff-chip:hover { border-color: #999; color: #555; }
+.diff-chip.active { border-color: #1a1a2e; background: #1a1a2e; color: #fff; }
+
 .section-title {
   margin: 0;
   font-size: 14px;
