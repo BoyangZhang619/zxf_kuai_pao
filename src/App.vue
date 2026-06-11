@@ -114,8 +114,7 @@ function tapDir(dir: Direction) {
   align-items: center;
   gap: 14px;
   padding: 16px 12px 28px;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100%;
   box-sizing: border-box;
 }
 

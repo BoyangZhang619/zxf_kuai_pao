@@ -224,7 +224,7 @@ function handleCancel() {
   border-radius: 16px;
   width: 420px;
   max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 64px);
+  max-height: calc(100dvh - 64px);
   overflow-y: auto;
   box-shadow: 0 12px 60px rgba(0, 0, 0, 0.2);
   display: flex;
