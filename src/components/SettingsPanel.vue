@@ -148,6 +148,35 @@ function handleCancel() {
             </div>
           </section>
 
+          <!-- ====== 道具设置 ====== -->
+          <section class="setting-section">
+            <h4 class="section-title">🎒 道具</h4>
+
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">🍖 肉干数量</span>
+                <span class="setting-desc">猫吃→暂停3s+5s双倍速；鼠可携带放下</span>
+              </div>
+              <div class="stepper">
+                <button class="stepper-btn" @click="local.jerkyCount = Math.max(0, local.jerkyCount - 1)">−</button>
+                <span class="stepper-value">{{ local.jerkyCount }}</span>
+                <button class="stepper-btn" @click="local.jerkyCount = Math.min(10, local.jerkyCount + 1)">+</button>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">🧪 糖水数量</span>
+                <span class="setting-desc">猫喝→穿墙1s；鼠喝→消5面墙+1s窄视野</span>
+              </div>
+              <div class="stepper">
+                <button class="stepper-btn" @click="local.sugarWaterCount = Math.max(0, local.sugarWaterCount - 1)">−</button>
+                <span class="stepper-value">{{ local.sugarWaterCount }}</span>
+                <button class="stepper-btn" @click="local.sugarWaterCount = Math.min(10, local.sugarWaterCount + 1)">+</button>
+              </div>
+            </div>
+          </section>
+
           <!-- ====== 风格主题 ====== -->
           <section class="setting-section">
             <h4 class="section-title">🎨 风格主题</h4>

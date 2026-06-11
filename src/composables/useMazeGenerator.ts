@@ -1,4 +1,4 @@
-import type { Cell, Position, Direction } from '../types/maze'
+import type { Cell, Position, Direction, GroundItem, ItemType } from '../types/maze'
 
 // ============ 迷宫生成 ============
 
@@ -139,6 +139,36 @@ function placeTraps(size: number, count: number, start: Position, goal: Position
   return traps
 }
 
+// ============ 道具放置 ============
+
+function placeItems(size: number, jerkyCount: number, sugarCount: number, start: Position, goal: Position, traps: Set<string>): GroundItem[] {
+  const items: GroundItem[] = []
+  const occupied = new Set<string>()
+  occupied.add(`${start.row},${start.col}`)
+  occupied.add(`${goal.row},${goal.col}`)
+  for (const t of traps) occupied.add(t)
+
+  const candidates: Position[] = []
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (!occupied.has(`${r},${c}`)) candidates.push({ row: r, col: c })
+    }
+  }
+
+  const chosen = shuffle(candidates)
+  let placed = 0
+  for (const p of chosen) {
+    if (placed < jerkyCount) { items.push({ type: 'jerky', row: p.row, col: p.col }); placed++; occupied.add(`${p.row},${p.col}`) }
+  }
+  placed = 0
+  for (const p of chosen) {
+    if (!occupied.has(`${p.row},${p.col}`) && placed < sugarCount) {
+      items.push({ type: 'sugarWater', row: p.row, col: p.col }); placed++; occupied.add(`${p.row},${p.col}`)
+    }
+  }
+  return items
+}
+
 // ============ 迷宫生成入口 ============
 
 export interface MazeResult {
@@ -146,9 +176,13 @@ export interface MazeResult {
   start: Position
   goal: Position
   traps: Set<string>
+  items: GroundItem[]
 }
 
-export function generateMaze(size: number, density: number = 50, trapCount: number = 0): MazeResult {
+export function generateMaze(
+  size: number, density: number = 50, trapCount: number = 0,
+  jerkyCount: number = 0, sugarCount: number = 0,
+): MazeResult {
   const grid: Cell[][] = Array.from({ length: size }, (_, r) =>
     Array.from({ length: size }, (__, c) => createCell(r, c)),
   )
@@ -163,17 +197,18 @@ export function generateMaze(size: number, density: number = 50, trapCount: numb
   grid[size - 1][size - 1].walls.bottom = false
 
   if (!isReachable(grid, start, goal, size)) {
-    return generateMaze(size, density, trapCount)
+    return generateMaze(size, density, trapCount, jerkyCount, sugarCount)
   }
 
   if (!checkRightHandRuleFails(grid, start, goal, size)) {
     createLoops(grid, size, Math.max(0, density - 20))
-    if (!isReachable(grid, start, goal, size)) return generateMaze(size, density, trapCount)
+    if (!isReachable(grid, start, goal, size)) return generateMaze(size, density, trapCount, jerkyCount, sugarCount)
   }
 
   const traps = placeTraps(size, trapCount, start, goal)
+  const items = placeItems(size, jerkyCount, sugarCount, start, goal, traps)
 
-  return { maze: grid, start, goal, traps }
+  return { maze: grid, start, goal, traps, items }
 }
 
 // ============ 移动判断 ============

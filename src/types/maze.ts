@@ -25,20 +25,36 @@ export type GamePhase = 'config' | 'playing' | 'won' | 'caught'
 /** 方向 */
 export type Direction = 'up' | 'down' | 'left' | 'right'
 
+/** 道具类型 */
+export type ItemType = 'jerky' | 'sugarWater'
+
+/** 地上的道具 */
+export interface GroundItem {
+  type: ItemType
+  row: number
+  col: number
+}
+
+/** 猫的活跃 buff */
+export interface CatBuffs {
+  /** 加速结束时间戳 (0=无) */
+  speedBoostUntil: number
+  /** 穿墙结束时间戳 (0=无) */
+  wallPhaseUntil: number
+  /** 进食暂停结束时间戳 (0=无) */
+  eatingUntil: number
+}
+
 /** 可配置的游戏参数 */
 export interface GameConfig {
-  /** 猫出现的延迟步数 */
   catSpawnDelay: number
-  /** 猫移动间隔（秒） */
   catMoveInterval: number
-  /** 迷宫边长 */
   mazeSize: number
-  /** 墙壁密度 0-100，数值越高墙越多 */
   wallDensity: number
-  /** 陷阱数量 */
   trapCount: number
-  /** 陷阱停滞时间（秒） */
   trapStunDuration: number
+  jerkyCount: number
+  sugarWaterCount: number
 }
 
 /** 游戏完整状态 */

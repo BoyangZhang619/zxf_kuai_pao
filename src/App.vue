@@ -19,6 +19,8 @@ const defaultConfig: GameConfig = {
   wallDensity: 60,
   trapCount: 4,
   trapStunDuration: 1,
+  jerkyCount: 3,
+  sugarWaterCount: 3,
 }
 
 const config = reactive<GameConfig>({ ...defaultConfig })
