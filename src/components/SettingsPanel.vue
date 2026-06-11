@@ -120,6 +120,34 @@ function handleCancel() {
             </div>
           </section>
 
+          <!-- ====== 陷阱设置 ====== -->
+          <section class="setting-section">
+            <h4 class="section-title">⚡ 陷阱</h4>
+
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">陷阱数量</span>
+                <span class="setting-desc">{{ local.trapCount === 0 ? '无陷阱' : local.trapCount + ' 个陷阱随机分布' }}</span>
+              </div>
+              <div class="slider-wrap">
+                <input v-model.number="local.trapCount" type="range" min="0" max="20" step="2" class="styled-slider" />
+                <span class="slider-val">{{ local.trapCount }}</span>
+              </div>
+            </div>
+
+            <div class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">停滞时间</span>
+                <span class="setting-desc">踩中陷阱停滞 {{ local.trapStunDuration }} 秒</span>
+              </div>
+              <div class="stepper">
+                <button class="stepper-btn" @click="local.trapStunDuration = Math.max(0.5, +(local.trapStunDuration - 0.5).toFixed(1))">−</button>
+                <span class="stepper-value">{{ local.trapStunDuration.toFixed(1) }}s</span>
+                <button class="stepper-btn" @click="local.trapStunDuration = Math.min(5, +(local.trapStunDuration + 0.5).toFixed(1))">+</button>
+              </div>
+            </div>
+          </section>
+
           <!-- ====== 风格主题 ====== -->
           <section class="setting-section">
             <h4 class="section-title">🎨 风格主题</h4>

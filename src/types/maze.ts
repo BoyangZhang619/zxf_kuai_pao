@@ -33,8 +33,12 @@ export interface GameConfig {
   catMoveInterval: number
   /** 迷宫边长 */
   mazeSize: number
-  /** 墙壁密度 0-100，数值越高墙越多（迷宫越密） */
+  /** 墙壁密度 0-100，数值越高墙越多 */
   wallDensity: number
+  /** 陷阱数量 */
+  trapCount: number
+  /** 陷阱停滞时间（秒） */
+  trapStunDuration: number
 }
 
 /** 游戏完整状态 */
@@ -60,6 +64,7 @@ export interface StyleTheme {
   mouseColor: string
   catColor: string
   exitColor: string
+  trapColor: string
   backgroundColor: string
   trailColor: string
 }

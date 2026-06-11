@@ -9,6 +9,7 @@ const defaultTheme: StyleTheme = {
   mouseColor: '#4a90d9',
   catColor: '#e05a3d',
   exitColor: '#4caf50',
+  trapColor: '#e74c3c',
   backgroundColor: '#ffffff',
   trailColor: 'rgba(74, 144, 217, 0.12)',
 }
@@ -23,6 +24,7 @@ const presetThemes: Record<string, StyleTheme> = {
     mouseColor: '#66b3ff',
     catColor: '#ff6b6b',
     exitColor: '#5ecc6e',
+    trapColor: '#ff4444',
     backgroundColor: '#16213e',
     trailColor: 'rgba(102, 179, 255, 0.18)',
   },
@@ -34,9 +36,24 @@ const presetThemes: Record<string, StyleTheme> = {
     mouseColor: '#f39800',
     catColor: '#d9414e',
     exitColor: '#2196f3',
+    trapColor: '#c0392b',
     backgroundColor: '#f5f9f0',
     trailColor: 'rgba(243, 152, 0, 0.12)',
   },
+}
+
+/** 将主题同步到 document.documentElement 全局 CSS 变量 */
+function applyThemeToRoot(theme: StyleTheme) {
+  const root = document.documentElement
+  root.style.setProperty('--maze-wall', theme.wallColor)
+  root.style.setProperty('--maze-path', theme.pathColor)
+  root.style.setProperty('--maze-mouse', theme.mouseColor)
+  root.style.setProperty('--maze-cat', theme.catColor)
+  root.style.setProperty('--maze-exit', theme.exitColor)
+  root.style.setProperty('--maze-trap', theme.trapColor)
+  root.style.setProperty('--maze-bg', theme.backgroundColor)
+  root.style.setProperty('--maze-trail', theme.trailColor)
+  root.style.setProperty('--page-bg', theme.backgroundColor)
 }
 
 const state = reactive({
@@ -44,11 +61,15 @@ const state = reactive({
   available: { ...presetThemes },
 })
 
+// 初始化全局主题
+applyThemeToRoot(defaultTheme)
+
 export function useStyle() {
   function setTheme(name: string) {
     const theme = presetThemes[name]
     if (theme) {
       Object.assign(state.current, theme)
+      applyThemeToRoot(theme)
     }
   }
 

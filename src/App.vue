@@ -17,6 +17,8 @@ const defaultConfig: GameConfig = {
   catMoveInterval: 0.5,
   mazeSize: 16,
   wallDensity: 60,
+  trapCount: 4,
+  trapStunDuration: 1,
 }
 
 const config = reactive<GameConfig>({ ...defaultConfig })
