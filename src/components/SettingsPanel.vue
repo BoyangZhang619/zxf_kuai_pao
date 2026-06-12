@@ -15,21 +15,51 @@ const emit = defineEmits<{
 }>()
 
 const local = ref<GameConfig>({ ...props.config })
+const snapshot = ref<GameConfig>({ ...props.config })
+const showConfirm = ref(false)
 
 const { theme, setTheme, getThemeNames } = useStyle()
 const themeNames = getThemeNames()
 
 // 每次打开面板时同步外部配置
 watch(() => props.visible, (v) => {
-  if (v) local.value = { ...props.config }
+  if (v) {
+    local.value = { ...props.config }
+    snapshot.value = { ...props.config }
+    showConfirm.value = false
+  }
 })
+
+function hasChanges(): boolean {
+  const a = local.value, b = snapshot.value
+  return a.catSpawnDelay !== b.catSpawnDelay ||
+    a.catMoveInterval !== b.catMoveInterval ||
+    a.mazeSize !== b.mazeSize ||
+    a.wallDensity !== b.wallDensity ||
+    a.trapCount !== b.trapCount ||
+    a.trapStunDuration !== b.trapStunDuration ||
+    a.jerkyCount !== b.jerkyCount ||
+    a.sugarWaterCount !== b.sugarWaterCount ||
+    a.showItemToasts !== b.showItemToasts
+}
 
 function handleApply() {
   emit('apply', { ...local.value })
   emit('close')
 }
 
-function handleCancel() {
+function handleClose() {
+  if (hasChanges()) { showConfirm.value = true; return }
+  emit('close')
+}
+
+function handleConfirmSave() {
+  showConfirm.value = false
+  handleApply()
+}
+
+function handleConfirmDiscard() {
+  showConfirm.value = false
   local.value = { ...props.config }
   emit('close')
 }
@@ -37,11 +67,11 @@ function handleCancel() {
 
 <template>
   <Transition name="panel">
-    <div v-if="visible" class="settings-backdrop" @click.self="handleCancel">
+    <div v-if="visible" class="settings-backdrop" @click.self="handleClose">
       <div class="settings-panel">
         <div class="panel-header">
           <h3>⚙️ 游戏设置</h3>
-          <button class="close-btn" @click="handleCancel" aria-label="关闭">✕</button>
+          <button class="close-btn" @click="handleClose" aria-label="关闭">✕</button>
         </div>
 
         <div class="panel-body">
@@ -233,10 +263,21 @@ function handleCancel() {
         </div>
 
         <div class="panel-footer">
-          <button class="btn btn-cancel" @click="handleCancel">取消</button>
+          <button class="btn btn-cancel" @click="handleClose">取消</button>
           <button class="btn btn-apply" @click="handleApply">应用并重新开始</button>
         </div>
       </div>
+
+      <!-- 未保存确认弹窗 -->
+      <Transition name="confirm">
+        <div v-if="showConfirm" class="confirm-dialog">
+          <p>设置已修改，是否保存？</p>
+          <div class="confirm-btns">
+            <button class="btn btn-cancel" @click="handleConfirmDiscard">不保存</button>
+            <button class="btn btn-apply" @click="handleConfirmSave">保存</button>
+          </div>
+        </div>
+      </Transition>
     </div>
   </Transition>
 </template>
@@ -516,4 +557,21 @@ function handleCancel() {
 .panel-enter-from .settings-panel { transform: scale(0.92) translateY(20px); }
 .panel-leave-to   { opacity: 0; }
 .panel-leave-to .settings-panel   { transform: scale(0.95) translateY(10px); }
+
+/* 确认弹窗 */
+.confirm-dialog {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff; border-radius: 14px;
+  padding: 24px 28px; text-align: center;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+  z-index: 10; min-width: 260px;
+}
+.confirm-dialog p { margin: 0 0 18px; font-size: 15px; font-weight: 600; color: #333; }
+.confirm-btns { display: flex; gap: 10px; justify-content: center; }
+
+.confirm-enter-active { transition: all 0.2s ease; }
+.confirm-leave-active { transition: all 0.15s ease; }
+.confirm-enter-from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+.confirm-leave-to   { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
 </style>
